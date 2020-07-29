@@ -1,0 +1,39 @@
+spec:
+  templates:
+    # Get a qiskit noise model for and IBM device
+    - name: get-qiskit-noise-model
+      parent: generic-task
+      inputs:
+        parameters:
+          - name: device-name
+          - name: hub
+            default: "ibm-q"
+          - name: group
+            default: "open"
+          - name: project
+            default: "main"
+          - name: api-token
+            default: "None"
+          - name: command
+            value: python3 main_script.py
+        artifacts:
+          - name: main-script
+            path: /app/main_script.py
+            raw:
+              data: |
+                from zquantum.core.circuit import save_circuit_connectivity
+                from qeqiskit.utils import save_qiskit_noise_model
+                from qeqiskit.noise import get_qiskit_noise_model
+
+                noise_model, device_connectivity = get_qiskit_noise_model('{{inputs.parameters.device-name}}',
+                    hub='{{inputs.parameters.hub}}', group='{{inputs.parameters.group}}',
+                    project='{{inputs.parameters.project}}', api_token='{{inputs.parameters.api-token}}')
+
+                save_qiskit_noise_model(noise_model, "noise_model.json")
+                save_circuit_connectivity(device_connectivity, "device_connectivity.json")
+      outputs:
+        artifacts:
+          - name: noise-model
+            path: /app/noise_model.json
+          - name: device-connectivity
+            path: /app/device_connectivity.json
