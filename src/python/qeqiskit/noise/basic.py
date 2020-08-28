@@ -48,7 +48,6 @@ def create_amplitude_damping_noise(T_1, t_step=10e-9):
 
     gamma = (1 - pow(np.e, - 1/T_1*t_step))
     error = amplitude_damping_error(gamma)
-
     gate_error = error.tensor(error)
 
     noise_model = NoiseModel()
@@ -59,7 +58,6 @@ def create_amplitude_damping_noise(T_1, t_step=10e-9):
 def create_dephasing_noise(T_2, t_step=10e-9):
     gamma = (1 - pow(np.e, - 1/T_2*t_step))
     error = phase_damping_error(params)
-
     gate_error = error.tensor(error)
 
     noise_model = NoiseModel()
@@ -71,9 +69,9 @@ def create_phase_and_amplitude_damping_error(T_1, T_2, t_step=10e-9):
 
     param_amp = (1 - pow(np.e, - 1/T_1*t_step))
     param_phase = (1 - pow(np.e, - 1/T_2*t_step))
-
     error = phase_amplitude_damping_error(param_amp, param_phase)
     gate_error = error.tensor(error)
+
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
@@ -95,9 +93,10 @@ def create_pta_channel(T_1, T_2, t_step=10e-9):
     exp_2 = pow(np.e, -t_step/t_phi)
     p_z = (0.5 - p_x - 0.5*exp_1*exp_2)
     p_i = 1 - p_x - p_y - p_z
-    noise_model = NoiseModel()
     errors = [('X', p_x), ('Y', p_y), ('Z', p_z), ('I', p_i)]
     pta_error = pauli_error(errors)
+    
+    noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(pta_error, ['id', 'u3'])
     gate_error = pta_error.tensor(pta_error)
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
