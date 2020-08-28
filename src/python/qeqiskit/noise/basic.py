@@ -41,7 +41,9 @@ def get_qiskit_noise_model(
 
     return noise_model, CircuitConnectivity(coupling_map)
 
-def create_amplitude_damping_noise(gamma):
+def create_amplitude_damping_noise(T_1, t_step=10e-9):
+
+    gamma = (1 - pow(np.e, - 1/T_1*t_step))
     error = amplitude_damping_error(gamma)
 
     gate_error = error.tensor(error)
@@ -51,7 +53,8 @@ def create_amplitude_damping_noise(gamma):
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
     return noise_model
 
-def create_dephasing_noise(params):
+def create_dephasing_noise(T_2, t_step=10e-9):
+    gamma = (1 - pow(np.e, - 1/T_2*t_step))
     error = phase_damping_error(params)
 
     gate_error = error.tensor(error)
@@ -61,7 +64,10 @@ def create_dephasing_noise(params):
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
     return noise_model
 
-def create_phase_and_amplitude_damping_error(param_amp, param_phase):
+def create_phase_and_amplitude_damping_error(T_1, T_2, t_step=10e-9):
+
+    param_amp = (1 - pow(np.e, - 1/T_1*t_step))
+    param_phase = (1 - pow(np.e, - 1/T_2*t_step))
 
     error = phase_amplitude_damping_error(param_amp, param_phase)
     gate_error = error.tensor(error)
