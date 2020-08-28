@@ -50,12 +50,21 @@ def create_amplitude_damping_noise(gamma):
     noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
     return noise_model
-    
+
 def create_dephasing_noise(params):
     error = phase_damping_error(params)
 
     gate_error = error.tensor(error)
 
+    noise_model = NoiseModel()
+    noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
+    noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
+    return noise_model
+
+def create_phase_and_amplitude_damping_error(param_amp, param_phase):
+
+    error = phase_amplitude_damping_error(param_amp, param_phase)
+    gate_error = error.tensor(error)
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
