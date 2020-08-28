@@ -3,6 +3,8 @@ import qiskit.providers.aer.noise as AerNoise
 from qiskit import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from zquantum.core.circuit import CircuitConnectivity
+from qiskit.providers.aer.noise import amplitude_damping_error, phase_damping_error
+from qiskit.providers.aer.noise import NoiseModel
 
 
 def get_qiskit_noise_model(
@@ -38,3 +40,22 @@ def get_qiskit_noise_model(
     coupling_map = noisy_device.configuration().coupling_map
 
     return noise_model, CircuitConnectivity(coupling_map)
+
+def create_amplitude_damping_noise(gamma):
+    error = amplitude_damping_error(gamma)
+
+    gate_error = error.tensor(error)
+
+    noise_model = NoiseModel()
+    noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
+    noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
+
+def build_dephasing_noise(params):
+    error = phase_damping_error(params)
+
+    gate_error = error.tensor(error)
+
+    noise_model = NoiseModel()
+    noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
+    noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
+    return noise_model
