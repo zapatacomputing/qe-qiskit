@@ -3,7 +3,10 @@ import qiskit.providers.aer.noise as AerNoise
 from qiskit import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from zquantum.core.circuit import CircuitConnectivity
-from qiskit.providers.aer.noise import amplitude_damping_error, phase_damping_error, phase_amplitude_damping_error
+from qiskit.providers.aer.noise import (amplitude_damping_error, 
+                                        phase_damping_error, 
+                                        phase_amplitude_damping_error, 
+                                        pauli_error)
 from qiskit.providers.aer.noise import NoiseModel
 
 
@@ -75,3 +78,29 @@ def create_phase_and_amplitude_damping_error(T_1, T_2, t_step=10e-9):
     noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
     return noise_model
+
+def create_pta_channel(T_1, T_2, t_step=10e-9):
+
+    if T_1 == T_2:
+        t_phi = 2*T_1
+    elif 2*T_1 == T_2:
+        raise RuntimeError(" T_2 == 2*T_1 only in a pure amplitude damping case ")
+    else:
+        t_phi = T_2 - 2*T_1
+    
+    p_x = 0.25*(1- pow(np.e, - t_step/T_1))
+    p_y = 0.25*(1- pow(np.e, - t_step/T_1))
+    
+    exp_1 = pow(np.e, -t_step/(2*T_1))
+    exp_2 = pow(np.e, -t_step/t_phi)
+    p_z = (0.5 - p_x - 0.5*exp_1*exp_2)
+    p_i = 1 - p_x - p_y - p_z
+    noise_model = NoiseModel()
+    errors = [('X', p_x), ('Y', p_y), ('Z', p_z), ('I', p_i)]
+    pta_error = pauli_error(errors)
+    noise_model.add_all_qubit_quantum_error(pta_error, ['id', 'u3'])
+    gate_error = pta_error.tensor(pta_error)
+    noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
+    return noise_model
+
+
