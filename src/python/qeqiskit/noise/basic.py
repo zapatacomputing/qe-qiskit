@@ -49,8 +49,9 @@ def create_amplitude_damping_noise(gamma):
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error, ['id', 'u3'])
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
-
-def build_dephasing_noise(params):
+    return noise_model
+    
+def create_dephasing_noise(params):
     error = phase_damping_error(params)
 
     gate_error = error.tensor(error)
