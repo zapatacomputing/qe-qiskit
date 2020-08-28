@@ -8,6 +8,7 @@ from qiskit.providers.aer.noise import (amplitude_damping_error,
                                         phase_amplitude_damping_error, 
                                         pauli_error)
 from qiskit.providers.aer.noise import NoiseModel
+from qiskit.quantum_info import Kraus
 
 
 def get_qiskit_noise_model(
@@ -144,3 +145,28 @@ def create_pta_channel(T_1, T_2, t_step=10e-9):
     return noise_model
 
 
+def get_kraus_matrices_from_noise_model(noise_model):
+    """ Gets Kraus matrices for a qiskit noise model
+        It is assumed that the single qubit gate Kraus model is that is applied for the identity gate is the 
+        same as that applied for the u3 gate instruction.
+    
+    Args:
+        noise_model (qiskit.providers.aer.noise.NoiseModel): The noise model for which you want kraus matrices for
+    
+    Returns
+        Kraus(single_qubit_quantum_error) (qiskit.quantum_info.Kraus): Kraus object for single qubits
+        Kraus(two_qubit_quanutm_error)) (qiskit.quantum_info.Kraus): Kraus object for two qubit gates
+
+    """
+    single_qubit_quantum_error = None
+    two_qubit_quanutm_error = None
+    retrieved_quantum_error_dict = noise_model._default_quantum_errors
+    if 'id' in retrieved_quantum_error_dict.keys():
+        single_qubit_quantum_error = retrieved_quantum_error_dict['id']
+    elif 'u3' in retrieved_quantum_error_dict.keys() and single_qubit_quantum_error is not None:
+        single_qubit_quantum_error = retrieved_quantum_error_dict['u3']
+         
+    if 'cx' in retrieved_quantum_error_dict.keys()
+        two_qubit_quanutm_error = retrieved_quantum_error_dict['cx']
+     
+    return Kraus(single_qubit_quantum_error), Kraus(two_qubit_quanutm_error)
