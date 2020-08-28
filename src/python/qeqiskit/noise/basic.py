@@ -45,6 +45,15 @@ def get_qiskit_noise_model(
     return noise_model, CircuitConnectivity(coupling_map)
 
 def create_amplitude_damping_noise(T_1, t_step=10e-9):
+    """ Creates an amplitude damping noise model
+    
+    Args:
+        T_1 (float) : Relaxation time
+        t_step (float) : Discretized time step over which the relaxation occurs over
+    
+    Returns:
+        qiskit.providers.aer.noise.NoiseModel
+    """
 
     gamma = (1 - pow(np.e, - 1/T_1*t_step))
     error = amplitude_damping_error(gamma)
@@ -56,6 +65,15 @@ def create_amplitude_damping_noise(T_1, t_step=10e-9):
     return noise_model
 
 def create_dephasing_noise(T_2, t_step=10e-9):
+    """ Creates a dephasing noise model
+    
+    Args:
+        T_2 (float) : dephasing time
+        t_step (float) : Discretized time step over which the relaxation occurs over
+    
+    Returns:
+        qiskit.providers.aer.noise.NoiseModel
+    """
     gamma = (1 - pow(np.e, - 1/T_2*t_step))
     error = phase_damping_error(params)
     gate_error = error.tensor(error)
@@ -66,6 +84,16 @@ def create_dephasing_noise(T_2, t_step=10e-9):
     return noise_model
 
 def create_phase_and_amplitude_damping_error(T_1, T_2, t_step=10e-9):
+    """ Creates a noise model that does both phase and amplitude damping
+    
+    Args:
+        T_1 (float) : Relaxation time
+        T_2 (float) : dephasing time
+        t_step (float) : Discretized time step over which the relaxation occurs over
+    
+    Returns:
+        qiskit.providers.aer.noise.NoiseModel
+    """
 
     param_amp = (1 - pow(np.e, - 1/T_1*t_step))
     param_phase = (1 - pow(np.e, - 1/T_2*t_step))
@@ -78,6 +106,19 @@ def create_phase_and_amplitude_damping_error(T_1, T_2, t_step=10e-9):
     return noise_model
 
 def create_pta_channel(T_1, T_2, t_step=10e-9):
+    """ Creates a noise model that does both phase and amplitude damping but in the
+        Pauli Twirling Approximation discussed the following reference 
+        https://arxiv.org/pdf/1305.2021.pdf
+
+    
+    Args:
+        T_1 (float) : Relaxation time
+        T_2 (float) : dephasing time
+        t_step (float) : Discretized time step over which the relaxation occurs over
+    
+    Returns:
+        qiskit.providers.aer.noise.NoiseModel
+    """
 
     if T_1 == T_2:
         t_phi = 2*T_1
@@ -95,7 +136,7 @@ def create_pta_channel(T_1, T_2, t_step=10e-9):
     p_i = 1 - p_x - p_y - p_z
     errors = [('X', p_x), ('Y', p_y), ('Z', p_z), ('I', p_i)]
     pta_error = pauli_error(errors)
-    
+
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(pta_error, ['id', 'u3'])
     gate_error = pta_error.tensor(pta_error)
