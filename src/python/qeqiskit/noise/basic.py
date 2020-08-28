@@ -3,7 +3,7 @@ import qiskit.providers.aer.noise as AerNoise
 from qiskit import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from zquantum.core.circuit import CircuitConnectivity
-from qiskit.providers.aer.noise import amplitude_damping_error, phase_damping_error
+from qiskit.providers.aer.noise import amplitude_damping_error, phase_damping_error, phase_amplitude_damping_error
 from qiskit.providers.aer.noise import NoiseModel
 
 
