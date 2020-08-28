@@ -163,7 +163,7 @@ def get_kraus_matrices_from_noise_model(noise_model):
     retrieved_quantum_error_dict = noise_model._default_quantum_errors
     if 'id' in retrieved_quantum_error_dict.keys():
         single_qubit_quantum_error = retrieved_quantum_error_dict['id']
-    elif 'u3' in retrieved_quantum_error_dict.keys() and single_qubit_quantum_error is not None:
+    elif 'u3' in retrieved_quantum_error_dict.keys() and single_qubit_quantum_error is None:
         single_qubit_quantum_error = retrieved_quantum_error_dict['u3']
          
     if 'cx' in retrieved_quantum_error_dict.keys()
