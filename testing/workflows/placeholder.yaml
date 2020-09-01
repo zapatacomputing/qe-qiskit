@@ -10,7 +10,7 @@ resources:
 
 
 metadata:
-  generateName: z-quantum-optimizers-acceptance-test-placeholder-
+  generateName: qe-qiskit-acceptance-test-placeholder-
 
 spec:
   entrypoint: main
