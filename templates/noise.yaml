@@ -77,11 +77,11 @@ spec:
             raw:
               data: |
                 from qeqiskit.utils import save_qiskit_noise_model
-                from qeqiskit.noise import create_dephasing_noise
+                from qeqiskit.noise import create_phase_damping_noise
 
                 T_2 = {{inputs.parameters.T2}}
                 t_step = {{inputs.parameters.t_step}}
-                noise_model = create_dephasing_noise(T_2, t_step)
+                noise_model = create_phase_damping_noise(T_2, t_step)
                 save_qiskit_noise_model(noise_model, "noise_model.json")
       outputs:
         artifacts:

@@ -6,7 +6,7 @@ from zquantum.core.circuit import CircuitConnectivity
 
 from .basic import (get_qiskit_noise_model, 
                     create_amplitude_damping_noise, 
-                    create_dephasing_noise, create_phase_and_amplitude_damping_error, 
+                    create_phase_damping_noise, create_phase_and_amplitude_damping_error, 
                     create_pta_channel)
 
 
@@ -49,6 +49,6 @@ class TestBasic(unittest.TestCase):
     def test_amplitude_damping_model(self):
         self.assertIsInstance(create_amplitude_damping_noise(self.T_1, self.t_step), AerNoise.NoiseModel)
 
-    def test_dephasing_model(self):
-        self.assertIsInstance(create_amplitude_damping_noise(self.T_2, self.t_step), AerNoise.NoiseModel)
+    def test_phase_damping_noise(self):
+        self.assertIsInstance(create_phase_damping_noise(self.T_2, self.t_step), AerNoise.NoiseModel)
 

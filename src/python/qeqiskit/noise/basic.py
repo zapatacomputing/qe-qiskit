@@ -65,7 +65,7 @@ def create_amplitude_damping_noise(T_1, t_step=10e-9):
     noise_model.add_all_qubit_quantum_error(gate_error, ['cx'])
     return noise_model
 
-def create_dephasing_noise(T_2, t_step=10e-9):
+def create_phase_damping_noise(T_2, t_step=10e-9):
     """ Creates a dephasing noise model
     
     Args:
@@ -145,28 +145,43 @@ def create_pta_channel(T_1, T_2, t_step=10e-9):
     return noise_model
 
 
-def get_kraus_matrices_from_noise_model(noise_model):
+def get_kraus_matrices_from_noise_model(T_1, T_2,t_step, noise_model= None):
     """ Gets Kraus matrices for a qiskit noise model
         It is assumed that the single qubit gate Kraus model is that is applied for the identity gate is the 
         same as that applied for the u3 gate instruction.
-    
+                
     Args:
-        noise_model (qiskit.providers.aer.noise.NoiseModel): The noise model for which you want kraus matrices for
+        T_1 (float) : Relaxation time
+        T_2 (float) : dephasing time
+        t_step (float) : Discretized time step over which the relaxation occurs over
+        noise_model (string): Specifies the noise model to which we want kraus operators for. 
     
     Returns
-        Kraus(single_qubit_quantum_error) (qiskit.quantum_info.Kraus): Kraus object for single qubits
-        Kraus(two_qubit_quanutm_error)) (qiskit.quantum_info.Kraus): Kraus object for two qubit gates
+       kraus_dict (dict): A dictionary containing single qubit and two qubit kraus operators for noise model
 
     """
     single_qubit_quantum_error = None
     two_qubit_quanutm_error = None
-    retrieved_quantum_error_dict = noise_model._default_quantum_errors
-    if 'id' in retrieved_quantum_error_dict.keys():
+    retrieved_quantum_error_dict = None
+    kraus_dict = {'single_qubit': None, 'two_qubit_kraus': None}
+    
+    if noise_model == 'pta':
+        noise_model = create_pta_channel(T_1, T_2, t_step)
+        retrieved_quantum_error_dict = noise_model.default_quantum_errors
+    elif noise_model == 'amplitude_damping':
+        noise_model = create_amplitude_damping_noise(T_1, t_step)
+        retrieved_quantum_error_dict = noise_model.default_quantum_errors
+    elif noise_model == 'phase_damping':
+        noise_model = create_phase_damping_noise(T_2, t_step)
+        retrieved_quantum_error_dict = noise_model.default_quantum_errors
+    elif noise_model == 'amplitude_phase_damping':
+        noise_model = create_phase_and_amplitude_damping_error(T_1, T_2, t_step)
+        retrieved_quantum_error_dict = noise_model.default_quantum_errors
+
         single_qubit_quantum_error = retrieved_quantum_error_dict['id']
-    elif 'u3' in retrieved_quantum_error_dict.keys() and single_qubit_quantum_error is None:
-        single_qubit_quantum_error = retrieved_quantum_error_dict['u3']
-         
-    if 'cx' in retrieved_quantum_error_dict.keys():
         two_qubit_quanutm_error = retrieved_quantum_error_dict['cx']
-     
-    return Kraus(single_qubit_quantum_error), Kraus(two_qubit_quanutm_error)
+
+        kraus_dict['single_qubit'] = Kraus(single_qubit_quantum_error).data()
+        kraus_dict['two_qubit_kraus'] = Kraus(two_qubit_quanutm_error).data()
+        
+    return kraus_dict

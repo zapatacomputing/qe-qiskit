@@ -1,7 +1,9 @@
 import qiskit.providers.aer.noise as AerNoise
+import qiskit.quantum_info.operators.channel as Channel
 from typing import TextIO
 import json
 from zquantum.core.utils import SCHEMA_VERSION
+
 
 
 def save_qiskit_noise_model(noise_model: AerNoise.NoiseModel, filename: str) -> None:
@@ -31,3 +33,22 @@ def load_qiskit_noise_model(data: dict) -> AerNoise.NoiseModel:
         (qiskit.providers.aer.noise.NoiseModel): the noise model
     """
     return AerNoise.NoiseModel.from_dict(data)
+
+
+def save_qiskit_kraus_operator(kraus: Channel.kraus, filename: str ) -> None:
+    """Save a kraus operator to file
+    Args:
+        kraus (qiskit.quantum_info.operators.channel.kraus): the noise model to be saved
+        filename (str): the name of the file
+    
+    """
+    data = {
+        "module_name": "qeqiskit.utils",
+        "function_name": "load_qiskit_noise_model",
+        "schema": SCHEMA_VERSION + "-noise-model",
+        "data": noise_model.to_dict(serializable=True),
+    }
+
+    with open(filename, "w") as f:
+        f.write(json.dumps(data, indent=2))
+
