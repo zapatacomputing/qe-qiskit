@@ -16,7 +16,7 @@ resources:
     type: git
     parameters:
       url: "git@github.com:zapatacomputing/qe-qiskit.git"
-      branch: "dev"
+      branch: "add-noise-models"
 
 metadata:
   generateName: qiskit-noise-model-test-
