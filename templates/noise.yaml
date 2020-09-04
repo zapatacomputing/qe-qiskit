@@ -105,7 +105,7 @@ spec:
                 from qeqiskit.utils import save_qiskit_noise_model
                 from qeqiskit.noise import create_phase_and_amplitude_damping_error
 
-                T_1 - {{inputs.paramters.T1}}
+                T_1 - {{inputs.parameters.T1}}
                 T_2 = {{inputs.parameters.T2}}
                 t_step = {{inputs.parameters.t-step}}
                 noise_model = create_phase_and_amplitude_damping_error(T_1 T_2, t_step)
@@ -132,7 +132,7 @@ spec:
                 from qeqiskit.utils import save_qiskit_noise_model
                 from qeqiskit.noise import create_pta_channel
 
-                T_1 - {{inputs.paramters.T1}}
+                T_1 - {{inputs.parameters.T1}}
                 T_2 = {{inputs.parameters.T2}}
                 t_step = {{inputs.parameters.t-step}}
                 noise_model = create_pta_channel(T_1 T_2, t_step)
