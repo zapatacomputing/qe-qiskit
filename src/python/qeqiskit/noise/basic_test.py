@@ -12,8 +12,8 @@ from .basic import (get_qiskit_noise_model,
 
 class TestBasic(unittest.TestCase):
     def setUp(self):
-        self.ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        self.all_devices = ["ibmqx2"]
+    #     self.ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
+    #     self.all_devices = ["ibmqx2"]
         self.T_1 = 10e-7
         self.T_2 = 30e-7
         self.t_step = 10e-9
@@ -42,13 +42,13 @@ class TestBasic(unittest.TestCase):
                 lambda: get_qiskit_noise_model(device, api_token=self.ibmq_api_token),
             )
     
-    def test_t_1_t_2_noise_models():
-        for noise in self.t_1_t_2_models
+    def test_t_1_t_2_noise_models(self):
+        for noise in self.t_1_t_2_models:
             self.assertIsInstance(noise(self.T_1, self.T_2, self.t_step), AerNoise.NoiseModel)
 
-    def test_amplitude_damping_model():
+    def test_amplitude_damping_model(self):
         self.assertIsInstance(create_amplitude_damping_noise(self.T_1, self.t_step), AerNoise.NoiseModel)
 
-    def test_dephasing_model():
+    def test_dephasing_model(self):
         self.assertIsInstance(create_amplitude_damping_noise(self.T_2, self.t_step), AerNoise.NoiseModel)
 
