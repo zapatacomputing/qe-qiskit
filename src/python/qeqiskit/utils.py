@@ -35,20 +35,32 @@ def load_qiskit_noise_model(data: dict) -> AerNoise.NoiseModel:
     return AerNoise.NoiseModel.from_dict(data)
 
 
-def save_qiskit_kraus_operator(kraus: Channel.kraus, filename: str ) -> None:
+def save_kraus_operators(kraus: Dict, filename: str ) -> None:
     """Save a kraus operator to file
     Args:
-        kraus (qiskit.quantum_info.operators.channel.kraus): the noise model to be saved
+        kraus (Dict): Has single qubit and two qubit kraus operators
         filename (str): the name of the file
     
     """
-    data = {
-        "module_name": "qeqiskit.utils",
-        "function_name": "load_qiskit_noise_model",
-        "schema": SCHEMA_VERSION + "-noise-model",
-        "data": noise_model.to_dict(serializable=True),
-    }
+    dict['schema'] = SCHEMA_VERSION+'-dict'
 
-    with open(filename, "w") as f:
-        f.write(json.dumps(data, indent=2))
+    with open(filename, 'w') as f:
+        f.write(json.dumps(dict, indent=2))
+
+def load_kraus_operators(file):
+    """Load kraus dictionary from a file.
+    Args:
+        file (str or file-like object): the name of the file, or a file-like object.
+    Returns:
+        dict: the kraus dict.
+    """
+
+    if isinstance(file, str):
+        with open(file, 'r') as f:
+            data = json.load(f)
+    else:
+        data = json.load(file)
+
+    return data
+
 
