@@ -141,3 +141,32 @@ spec:
         artifacts:
           - name: noise-model
             path: /app/noise_model.json
+
+    - name: get-kraus-operators-for-noise-model
+      parent: generic-task
+      inputs:
+        parameters:
+          - name: T1
+          - name: T2
+          - name: t-step
+          - name: noise-model
+          - name: command
+            value: python3 main_script.py
+        artifacts:
+          - name: main-script
+            path: /app/main_script.py
+            raw:
+              data: |
+                from qeqiskit.utils import save_kraus_operators
+                from qeqiskit.noise.basic import get_kraus_matrices_from_noise_model
+
+                T_1 = {{inputs.parameters.T1}}
+                T_2 = {{inputs.parameters.T2}}
+                t_step = {{inputs.parameters.t-step}}
+                noise_model = {{inputs.parameters.noise-model}}
+                kraus_dict = get_kraus_matrices_from_noise_model(T_1 = T_1, T_2 = T_2, t_step = t_step, noise_model = noise_model)
+                save_kraus_operators(noise_model, "noise_model.json")
+      outputs:
+        artifacts:
+          - name: noise-model
+            path: /app/noise_model.json
