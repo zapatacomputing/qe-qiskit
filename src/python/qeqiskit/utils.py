@@ -3,7 +3,6 @@ import qiskit.quantum_info.operators.channel as Channel
 from typing import TextIO
 import json
 from zquantum.core.utils import SCHEMA_VERSION
-from typing import Dict
 
 
 def save_qiskit_noise_model(noise_model: AerNoise.NoiseModel, filename: str) -> None:
@@ -35,7 +34,7 @@ def load_qiskit_noise_model(data: dict) -> AerNoise.NoiseModel:
     return AerNoise.NoiseModel.from_dict(data)
 
 
-def save_kraus_operators(kraus: Dict, filename: str ) -> None:
+def save_kraus_operators(kraus: dict, filename: str ) -> None:
     """Save a kraus operator to file
     Args:
         kraus (Dict): Has single qubit and two qubit kraus operators
