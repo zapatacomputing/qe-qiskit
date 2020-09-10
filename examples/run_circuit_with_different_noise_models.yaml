@@ -36,23 +36,24 @@ spec:
             template: get-amplitude-damping-noise-model
             arguments:
               parameters:
-                - T1: "40e-6"
-                - t-step: "50e-9"
-
+                - T1: "0.000004"
+                - t-step: "0.00000005"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
         - - name: get-phase-damping-noise-model
             template: get-phase-damping-noise-model
             arguments:
               parameters:
-                - T2: "40e-6"
-                - t-step: "50e-9"
-
+                - T2: "0.000004"
+                - t-step: "0.00000005"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
         - - name: get-phase-amplitude-damping-noise-model
             template: get-phase-amplitude-damping-noise-model
             arguments:
               parameters:
-                - T1: "60e-6"
-                - T2: "40e-6"
-                - t-step: "50e-9"
+                - T1: "0.000006"
+                - T2: "0.000004"
+                - t-step: "0.00000005"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
           # Create a random circuit
           - name: create-random-circuit
             template: create-random-circuit
@@ -72,7 +73,6 @@ spec:
               artifacts:
                 - circuit:
                     from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
-
         - - name: run-circuit-and-measure-with-amplitude-damping-noise
             template: run-circuit-and-measure
             arguments:
@@ -84,7 +84,6 @@ spec:
                     from: "{{steps.get-amplitude-damping-noise-model.outputs.artifacts.noise-model}}"
                 - circuit:
                     from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
-
         - - name: run-circuit-and-measure-with-phase-damping-noise
             template: run-circuit-and-measure
             arguments:
@@ -96,7 +95,6 @@ spec:
                     from: "{{steps.get-phase-damping-noise-model.outputs.artifacts.noise-model}}"
                 - circuit:
                     from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
-
         - - name: run-circuit-and-measure-with-phase-and-amplitude-damping-noise
             template: run-circuit-and-measure
             arguments:

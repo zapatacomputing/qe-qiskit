@@ -76,7 +76,7 @@ def create_phase_damping_noise(T_2, t_step=10e-9):
         qiskit.providers.aer.noise.NoiseModel
     """
     gamma = (1 - pow(np.e, - 1/T_2*t_step))
-    error = phase_damping_error(params)
+    error = phase_damping_error(gamma)
     gate_error = error.tensor(error)
 
     noise_model = NoiseModel()
