@@ -108,7 +108,7 @@ spec:
                 T_1 = {{inputs.parameters.T1}}
                 T_2 = {{inputs.parameters.T2}}
                 t_step = {{inputs.parameters.t-step}}
-                noise_model = create_phase_and_amplitude_damping_error(T_1 T_2, t_step)
+                noise_model = create_phase_and_amplitude_damping_error(T_1, T_2, t_step)
                 save_qiskit_noise_model(noise_model, "noise_model.json")
       outputs:
         artifacts:

@@ -55,7 +55,7 @@ spec:
                 - t-step: "0.00000005"
                 - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
           # Create a random circuit
-          - name: create-random-circuit
+        - - name: create-random-circuit
             template: create-random-circuit
             arguments:
               parameters:
