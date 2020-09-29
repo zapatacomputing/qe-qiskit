@@ -1,8 +1,7 @@
 import setuptools
 import os
 
-readme_path = os.path.join("..", "README.md")
-with open(readme_path, "r") as f:
+with open("README.md", "r") as f:
     long_description = f.read()
 
 
@@ -15,7 +14,13 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/zapatacomputing/qe-qiskit",
-    packages=setuptools.find_packages(where="src/python"),
+    packages=[
+        "qeqiskit",
+        "qeqiskit.backend",
+        "qeqiskit.noise",
+        "qeqiskit.optimizer",
+        "qeqiskit.simulator",
+    ],
     package_dir={"": "python"},
     classifiers=(
         "Programming Language :: Python :: 3",
