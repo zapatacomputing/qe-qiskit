@@ -1,6 +1,16 @@
-from zquantum.core.interfaces.optimizer import Optimizer
+from zquantum.core.interfaces.optimizer import Optimizer, optimization_result
 from qiskit.aqua.components.optimizers import SPSA, ADAM
 from scipy.optimize import OptimizeResult
+
+
+class _CostFunctionWrapper:
+    def __init__(self, cost_function):
+        self.cost_function = cost_function
+        self.number_of_calls = 0
+
+    def __call__(self, params):
+        self.number_of_calls += 1
+        return self.cost_function(params)
 
 
 class QiskitOptimizer(Optimizer):
@@ -14,7 +24,7 @@ class QiskitOptimizer(Optimizer):
         Options:
             keep_value_history(bool): boolean flag indicating whether the history of evaluations should be stored or not.
             **kwargs: options specific for particular scipy optimizers.
-            
+
         """
 
         self.method = method
@@ -35,7 +45,7 @@ class QiskitOptimizer(Optimizer):
         Args:
             cost_function(): python method which takes numpy.ndarray as input
             initial_params(np.ndarray): initial parameters to be used for optimization
-        
+
         Returns:
             optimization_results(scipy.optimize.OptimizeResults): results of the optimization.
         """
@@ -48,29 +58,19 @@ class QiskitOptimizer(Optimizer):
                 self.options["amsgrad"] = True
             optimizer = ADAM(**self.options)
 
-        def wrapped_(params):
-            history.append({"params": params})
-            if self.keep_value_history:
-                value = cost_function.evaluate(params).value
-                history[-1]["value"] = value
-                print(f"Iteration {len(history)}: {value}", flush=True)
-            else:
-                print(f"iteration {len(history)}")
-            print(f"{params}", flush=True)
-
         number_of_variables = len(initial_params)
-        cost_function_wrapper = lambda params: cost_function.evaluate(params).value
+        cost_function_wrapper = _CostFunctionWrapper(cost_function)
         solution, value, nit = optimizer.optimize(
             num_vars=number_of_variables,
             objective_function=cost_function_wrapper,
             initial_point=initial_params,
-            gradient_function=cost_function.get_gradient,
+            gradient_function=cost_function.gradient,
         )
-        optimization_results = {}
-        optimization_results["opt_value"] = value
-        optimization_results["opt_params"] = solution
-        optimization_results["history"] = {}
-        optimization_results["nfev"] = len(cost_function.evaluations_history)
-        optimization_results["nit"] = nit
 
-        return OptimizeResult(optimization_results)
+        return optimization_result(
+            opt_value=value,
+            opt_params=solution,
+            nit=nit,
+            history=[],
+            nfev=cost_function_wrapper.number_of_calls,
+        )
