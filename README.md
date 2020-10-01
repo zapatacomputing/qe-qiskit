@@ -8,7 +8,7 @@ Contained in this repository is an Orquestra quantum engine resource for using q
 
 ## QiskitSimulator
 
-Included in this resource is the `QiskitSimulator` which implements the `zquantum.core.interfaces.QuantumSimulator` interface.
+Included in this resource is the `QiskitSimulator` which implements the `zquantum.core.interfaces.QuantumSimulator` interface. 
 
 It can be imported with:
 ```
