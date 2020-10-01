@@ -7,7 +7,7 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
     name="qe-qiskit",
-    version="0.1.0",
+    version="0.2.0",
     author="Zapata Computing, Inc.",
     author_email="info@zapatacomputing.com",
     description="Integrations for deploying qiskit on Orquestra Quantum Engine",
