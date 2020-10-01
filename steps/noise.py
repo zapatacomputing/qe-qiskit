@@ -18,5 +18,5 @@ def get_qiskit_noise_model(
         api_token=api_token,
     )
 
-    save_qiskit_noise_model(noise_model, "noise_model.json")
-    save_circuit_connectivity(device_connectivity, "device_connectivity.json")
+    save_qiskit_noise_model(noise_model, "noise-model.json")
+    save_circuit_connectivity(device_connectivity, "device-connectivity.json")
