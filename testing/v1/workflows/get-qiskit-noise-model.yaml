@@ -19,7 +19,7 @@ imports:
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/qe-qiskit.git"
-    branch: "workflow-v1"
+    branch: "dev"
 
 steps:
 - name: get-qiskit-noise-model
