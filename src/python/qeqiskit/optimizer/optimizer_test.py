@@ -2,10 +2,7 @@ import unittest
 from .optimizer import QiskitOptimizer
 from zquantum.core.interfaces.optimizer_test import OptimizerTests
 import numpy as np
-
-
-def sum_x_squared(x):
-    return sum(x ** 2.0)
+from zquantum.core.interfaces.optimizer_test import sum_x_squared
 
 
 class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
