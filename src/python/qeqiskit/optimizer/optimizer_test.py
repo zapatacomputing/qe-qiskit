@@ -1,6 +1,11 @@
 import unittest
 from .optimizer import QiskitOptimizer
 from zquantum.core.interfaces.optimizer_test import OptimizerTests
+import numpy as np
+
+
+def sum_x_squared(x):
+    return sum(x ** 2.0)
 
 
 class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
@@ -21,3 +26,20 @@ class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
                 method="AMSGRAD", options={"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4}
             ),
         ]
+
+    def test_optimizer_succeeds_on_cost_function_without_gradient(self):
+        for optimizer in self.optimizers:
+            cost_function = sum_x_squared
+
+            results = optimizer.minimize(
+                cost_function, initial_params=np.array([1, -1])
+            )
+            self.assertAlmostEqual(results.opt_value, 0, places=5)
+            self.assertAlmostEqual(results.opt_params[0], 0, places=4)
+            self.assertAlmostEqual(results.opt_params[1], 0, places=4)
+
+            self.assertIn("nfev", results.keys())
+            self.assertIn("nit", results.keys())
+            self.assertIn("opt_value", results.keys())
+            self.assertIn("opt_params", results.keys())
+            self.assertIn("history", results.keys())
