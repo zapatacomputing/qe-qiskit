@@ -161,6 +161,7 @@ spec:
 
                 noise_model = load_noise_model('noise_model.json')
                 kraus_dict = get_kraus_matrices_from_ibm_noise_model(noise_model)
+                print(kraus_dict)
                 save_kraus_operators(kraus_dict, "kraus_operators.json")
       outputs:
         artifacts:
