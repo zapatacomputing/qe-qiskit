@@ -41,10 +41,10 @@ def save_kraus_operators(kraus: dict, filename: str ) -> None:
         filename (str): the name of the file
     
     """
-    dict['schema'] = SCHEMA_VERSION+'-dict'
+    kraus['schema'] = SCHEMA_VERSION +'-dict'
 
     with open(filename, 'w') as f:
-        f.write(json.dumps(dict, indent=2))
+        f.write(json.dumps(kraus, indent=2))
 
 def load_kraus_operators(file):
     """Load kraus dictionary from a file.
