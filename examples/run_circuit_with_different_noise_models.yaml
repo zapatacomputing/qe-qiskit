@@ -32,13 +32,13 @@ spec:
   templates:
     - name: main
       steps:
-        # - - name: get-amplitude-damping-noise-model
-        #     template: get-amplitude-damping-noise-model
-        #     arguments:
-        #       parameters:
-        #         - T1: "0.000004"
-        #         - t-step: "0.00000005"
-        #         - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+        - - name: get-amplitude-damping-noise-model
+            template: get-amplitude-damping-noise-model
+            arguments:
+              parameters:
+                - T1: "0.000004"
+                - t-step: "0.00000005"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
         - - name: get-phase-damping-noise-model
             template: get-phase-damping-noise-model
             arguments:
@@ -46,66 +46,66 @@ spec:
                 - T2: "0.000004"
                 - t-step: "0.00000005"
                 - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-        # - - name: get-phase-amplitude-damping-noise-model
-        #     template: get-phase-amplitude-damping-noise-model
-        #     arguments:
-        #       parameters:
-        #         - T1: "0.000006"
-        #         - T2: "0.000004"
-        #         - t-step: "0.00000005"
-        #         - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-        #   # Create a random circuit
-        # - - name: create-random-circuit
-        #     template: create-random-circuit
-        #     arguments:
-        #       parameters:
-        #         - num-qubits: "4"
-        #         - num-gates: "20"
-        #         - seed: "123"
-        #         - resources: [z-quantum-core]
-        # # Run without noise model
-        # - - name: run-circuit-and-measure-noiseless
-        #     template: run-circuit-and-measure
-        #     arguments:
-        #       parameters:
-        #         - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
-        #         - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-        #       artifacts:
-        #         - circuit:
-        #             from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
-        # - - name: run-circuit-and-measure-with-amplitude-damping-noise
-        #     template: run-circuit-and-measure
-        #     arguments:
-        #       parameters:
-        #         - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
-        #         - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-        #       artifacts:
-        #         - noise-model:
-        #             from: "{{steps.get-amplitude-damping-noise-model.outputs.artifacts.noise-model}}"
-        #         - circuit:
-        #             from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
-        # - - name: run-circuit-and-measure-with-phase-damping-noise
-        #     template: run-circuit-and-measure
-        #     arguments:
-        #       parameters:
-        #         - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
-        #         - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-        #       artifacts:
-        #         - noise-model:
-        #             from: "{{steps.get-phase-damping-noise-model.outputs.artifacts.noise-model}}"
-        #         - circuit:
-        #             from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
-        # - - name: run-circuit-and-measure-with-phase-and-amplitude-damping-noise
-        #     template: run-circuit-and-measure
-        #     arguments:
-        #       parameters:
-        #         - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
-        #         - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-        #       artifacts:
-        #         - noise-model:
-        #             from: "{{steps.get-phase-amplitude-damping-noise-model.outputs.artifacts.noise-model}}"
-        #         - circuit:
-        #             from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
+        - - name: get-phase-amplitude-damping-noise-model
+            template: get-phase-amplitude-damping-noise-model
+            arguments:
+              parameters:
+                - T1: "0.000006"
+                - T2: "0.000004"
+                - t-step: "0.00000005"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+          # Create a random circuit
+        - - name: create-random-circuit
+            template: create-random-circuit
+            arguments:
+              parameters:
+                - num-qubits: "4"
+                - num-gates: "20"
+                - seed: "123"
+                - resources: [z-quantum-core]
+        # Run without noise model
+        - - name: run-circuit-and-measure-noiseless
+            template: run-circuit-and-measure
+            arguments:
+              parameters:
+                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+              artifacts:
+                - circuit:
+                    from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
+        - - name: run-circuit-and-measure-with-amplitude-damping-noise
+            template: run-circuit-and-measure
+            arguments:
+              parameters:
+                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+              artifacts:
+                - noise-model:
+                    from: "{{steps.get-amplitude-damping-noise-model.outputs.artifacts.noise-model}}"
+                - circuit:
+                    from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
+        - - name: run-circuit-and-measure-with-phase-damping-noise
+            template: run-circuit-and-measure
+            arguments:
+              parameters:
+                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+              artifacts:
+                - noise-model:
+                    from: "{{steps.get-phase-damping-noise-model.outputs.artifacts.noise-model}}"
+                - circuit:
+                    from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
+        - - name: run-circuit-and-measure-with-phase-and-amplitude-damping-noise
+            template: run-circuit-and-measure
+            arguments:
+              parameters:
+                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+              artifacts:
+                - noise-model:
+                    from: "{{steps.get-phase-amplitude-damping-noise-model.outputs.artifacts.noise-model}}"
+                - circuit:
+                    from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
 
         - - name: get-kraus-operators-for-phase-damping-noise
             template: get-kraus-operators-for-noise-model
