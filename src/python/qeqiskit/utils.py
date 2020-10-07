@@ -43,6 +43,11 @@ def save_kraus_operators(kraus: dict, filename: str ) -> None:
     """
     kraus['schema'] = SCHEMA_VERSION +'-dict'
 
+    for gate in kraus:
+       for operator_index in range(len(kraus[gate])):
+           kraus[gate][operator_index] = kraus[gate][operator_index].tolist()
+
+
     with open(filename, 'w') as f:
         f.write(json.dumps(kraus, indent=2))
 
