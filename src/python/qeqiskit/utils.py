@@ -4,6 +4,8 @@ from typing import TextIO
 import json
 from zquantum.core.utils import SCHEMA_VERSION
 
+import numpy as np
+
 
 def save_qiskit_noise_model(noise_model: AerNoise.NoiseModel, filename: str) -> None:
     """Save a qiskit aer noise model to file
@@ -34,21 +36,23 @@ def load_qiskit_noise_model(data: dict) -> AerNoise.NoiseModel:
     return AerNoise.NoiseModel.from_dict(data)
 
 
-def save_kraus_operators(kraus: dict, filename: str ) -> None:
+
+def save_kraus_operators(kraus: dict, filename: str) -> None:
     """Save a kraus operator to file
     Args:
         kraus (Dict): Has single qubit and two qubit kraus operators
         filename (str): the name of the file
     
     """
-    kraus['schema'] = SCHEMA_VERSION +'-dict'
 
     for gate in kraus.keys():
        for operator_index in range(len(kraus[gate])):
-           kraus[gate][operator_index] = kraus[gate][operator_index].tolist()
+           kraus[gate][operator_index] = kraus[gate][operator_index].real.tolist()
 
+    kraus['schema'] = SCHEMA_VERSION +'-dict'
     with open(filename, 'w') as f:
         f.write(json.dumps(kraus, indent=2))
+    
 
 def load_kraus_operators(file):
     """Load kraus dictionary from a file.
@@ -61,8 +65,14 @@ def load_kraus_operators(file):
     if isinstance(file, str):
         with open(file, 'r') as f:
             data = json.load(f)
+           
     else:
-        data = json.load(file)
+         data = json.load(file)
+    
+    del data['schema']
+    for gate in data.keys():
+       for operator_index in range(len(data[gate])):
+           data[gate][operator_index] = np.asarray(data[gate][operator_index])
 
     return data
 
