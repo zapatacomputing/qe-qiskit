@@ -5,7 +5,7 @@ import json
 import qiskit.providers.aer.noise as AerNoise
 
 from zquantum.core.utils import load_noise_model, save_noise_model
-from .utils import save_qiskit_noise_model, load_qiskit_noise_model, save_kraus_operators, load_kraus_operators
+from .utils import save_qiskit_noise_model, load_qiskit_noise_model, save_kraus_operators
 from qeqiskit.noise.basic import create_amplitude_damping_noise,  get_kraus_matrices_from_ibm_noise_model
 
 class TestQiskitUtils(unittest.TestCase):
