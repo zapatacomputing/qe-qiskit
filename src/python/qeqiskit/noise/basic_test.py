@@ -11,8 +11,8 @@ from .basic import (get_qiskit_noise_model,
 
 class TestBasic(unittest.TestCase):
     def setUp(self):
-        # self.ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        # self.all_devices = ["ibmqx2"]
+        self.ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
+        self.all_devices = ["ibmqx2"]
         self.T_1 = 10e-7
         self.T_2 = 30e-7
         self.t_step = 10e-9
@@ -54,9 +54,17 @@ class TestBasic(unittest.TestCase):
     def test_getting_kraus_matrices_from_noise_model(self):
         noise_model = create_amplitude_damping_noise(self.T_1, self.t_step)
         kraus_dict = get_kraus_matrices_from_ibm_noise_model(noise_model)
+
+        # Test to see if basis gates are in
         self.assertEqual('id' in kraus_dict, True)
         self.assertEqual('u3' in kraus_dict, True)
         self.assertEqual('cx' in kraus_dict, True)
+
+        # Test to see if the number of kraus operators is right for a basis gate
+        self.assertEqual(len(kraus_dict['id']),2) 
+        self.assertEqual(len(kraus_dict['u3']), 2)
+        self.assertEqual(len(kraus_dict['cx']), 4)  
+
 
 
 
