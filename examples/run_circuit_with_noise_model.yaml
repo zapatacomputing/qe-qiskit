@@ -1,77 +1,106 @@
-ZapOSApiVersion: v1alpha1
-kind: Workflow
+apiVersion: io.orquestra.workflow/1.0.0
 
-resources:
-  - name: z-quantum-core
-    type: git
-    parameters:
-      url: "git@github.com:zapatacomputing/z-quantum-core.git"
-      branch: "dev"
-  - name: qe-openfermion
-    type: git
-    parameters:
-      url: "git@github.com:zapatacomputing/qe-openfermion.git"
-      branch: "dev"
-  - name: qe-qiskit
-    type: git
-    parameters:
-      url: "git@github.com:zapatacomputing/qe-qiskit.git"
-      branch: "dev"
+name: run-circuit-qiskit-noisy
 
-metadata:
-  generateName: qiskit-noise-model-test-
+imports:
+- name: z-quantum-core
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-core.git"
+    branch: "dev"
+- name: qe-openfermion
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/qe-openfermion.git"
+    branch: "dev"
+- name: qe-qiskit
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/qe-qiskit.git"
+    branch: "dev"
 
-spec:
-  entrypoint: main
 
-  arguments:
-    parameters:
-      - s3-bucket: quantum-engine
-      - s3-key: examples/qeqiskit/
+steps:
+- name: get-qiskit-noise-model
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-core, qe-openfermion, qe-qiskit]
+      parameters:
+        file: qe-qiskit/steps/noise.py
+        function: get_qiskit_noise_model
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      disk: "10Gi"
+  inputs:
+  - device_name: "ibmqx2"
+    type: string
+  - hub: "ibm-q"
+    type: string
+  - group: "open"
+    type: string
+  - project: "main"
+    type: string
+  - api_token: "YOUR IBMQ API TOKEN"
+    type: string
+  outputs:
+  - name: noise-model
+    type: noise-model
+  - name: device-connectivity
+    type: device-connectivity
 
-  templates:
-    - name: main
-      steps:
-        # Get a noise model for and IBM device
-        - - name: get-qiskit-noise-model
-            template: get-qiskit-noise-model
-            arguments:
-              parameters:
-                - device-name: "ibmqx2"
-                - api-token: "YOUR IBMQ API TOKEN"
-                - single-qubit-coherent-noise: "0.2617993877991494"
-                - two-qubit-coherent-noise: "0.7853981633974483"
-                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-          # Create a random circuit
-          - name: create-random-circuit
-            template: create-random-circuit
-            arguments:
-              parameters:
-                - num-qubits: "4"
-                - num-gates: "20"
-                - seed: "123"
-                - resources: [z-quantum-core]
-        # Run without noise model
-        - - name: run-circuit-and-measure-noiseless
-            template: run-circuit-and-measure
-            arguments:
-              parameters:
-                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
-                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-              artifacts:
-                - circuit:
-                    from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
-          # Run with noise model
-          - name: run-circuit-and-measure-noisy
-            template: run-circuit-and-measure
-            arguments:
-              parameters:
-                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
-                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
-              artifacts:
-                - noise-model:
-                    from: "{{steps.get-qiskit-noise-model.outputs.artifacts.noise-model}}"
-                - device-connectivity:
-                    from: "{{steps.get-qiskit-noise-model.outputs.artifacts.device-connectivity}}"
-                - circuit:
-                    from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
+- name: create-random-circuit
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-core]
+      parameters:
+        file: z-quantum-core/steps/circuit.py
+        function: create_random_circuit
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      disk: "10Gi"
+  inputs:
+  - number_of_qubits: 4
+    type: int
+  - number_of_gates: 20
+    type: int
+  - seed: "None"
+    type: string
+  outputs:
+  - name: circuit
+    type: circuit
+
+- name: run-circut-and-measure-noisy
+  passed: [create-random-circuit, get-qiskit-noise-model]
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-core, qe-openfermion, qe-qiskit]
+      parameters:
+        file: z-quantum-core/steps/measure.py
+        function: run_circuit_and_measure
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      disk: "10Gi"
+  inputs:
+  - backend_specs: '{"module_name": "qeqiskit.simulator", "function_name": "QiskitSimulator", "device_name": "qasm_simulator", "n_samples": 100}'
+    type: string
+  - circuit: ((create-random-circuit.circuit))
+    type: circuit
+  - noise_model: ((get-qiskit-noise-model.noise-model))
+    type: noise-model
+  - device_connectivity: ((get-qiskit-noise-model.device-connectivity))
+    type: device-connectivity
+  outputs:
+  - name: measurements
+    type: measurements
+
+types:
+- circuit
+- noise-model
+- device-connectivity
+- measurements
