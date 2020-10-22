@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import os
+import subprocess
 import json
 import qiskit.providers.aer.noise as AerNoise
 
