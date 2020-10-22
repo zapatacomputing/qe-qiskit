@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-import subprocess
+import os
 import json
 import qiskit.providers.aer.noise as AerNoise
 
@@ -98,7 +98,7 @@ class TestQiskitUtils(unittest.TestCase):
         save_kraus_operators(kraus_dict, 'kraus_operators.json')
 
         # Cleanup
-        subprocess.run(["rm", "kraus_operators.json"])
+        os.remove("kraus_operators.json")
 
 
 

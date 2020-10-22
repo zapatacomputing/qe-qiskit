@@ -6,17 +6,17 @@ resources:
     type: git
     parameters:
       url: "git@github.com:zapatacomputing/z-quantum-core.git"
-      branch: "dev"
+      branch: "master"
   - name: qe-openfermion
     type: git
     parameters:
       url: "git@github.com:zapatacomputing/qe-openfermion.git"
-      branch: "dev"
+      branch: "master"
   - name: qe-qiskit
     type: git
     parameters:
       url: "git@github.com:zapatacomputing/qe-qiskit.git"
-      branch: "add-noise-models"
+      branch: "master"
 
 metadata:
   generateName: qiskit-noise-model-test-
