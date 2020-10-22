@@ -60,11 +60,18 @@ class QiskitOptimizer(Optimizer):
 
         number_of_variables = len(initial_params)
         cost_function_wrapper = _CostFunctionWrapper(cost_function)
+
+        gradient_function = None
+        if hasattr(cost_function, "gradient") and callable(
+            getattr(cost_function, "gradient")
+        ):
+            gradient_function = cost_function.gradient
+
         solution, value, nit = optimizer.optimize(
             num_vars=number_of_variables,
             objective_function=cost_function_wrapper,
             initial_point=initial_params,
-            gradient_function=cost_function.gradient,
+            gradient_function=gradient_function,
         )
 
         return optimization_result(
