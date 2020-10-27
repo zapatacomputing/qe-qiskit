@@ -49,8 +49,8 @@ def create_amplitude_damping_noise(T_1, t_step=10e-9):
     """ Creates an amplitude damping noise model
     
     Args:
-        T_1 (float) : Relaxation time
-        t_step (float) : Discretized time step over which the relaxation occurs over
+        T_1 (float) : Relaxation time (seconds)
+        t_step (float) : Discretized time step over which the relaxation occurs over (seconds)
     
     Returns:
         qiskit.providers.aer.noise.NoiseModel
@@ -69,8 +69,8 @@ def create_phase_damping_noise(T_2, t_step=10e-9):
     """ Creates a dephasing noise model
     
     Args:
-        T_2 (float) : dephasing time
-        t_step (float) : Discretized time step over which the relaxation occurs over
+        T_2 (float) : dephasing time (seconds)
+        t_step (float) : Discretized time step over which the relaxation occurs over (seconds)
     
     Returns:
         qiskit.providers.aer.noise.NoiseModel
@@ -88,9 +88,9 @@ def create_phase_and_amplitude_damping_error(T_1, T_2, t_step=10e-9):
     """ Creates a noise model that does both phase and amplitude damping
     
     Args:
-        T_1 (float) : Relaxation time
-        T_2 (float) : dephasing time
-        t_step (float) : Discretized time step over which the relaxation occurs over
+        T_1 (float) : Relaxation time (seconds)
+        T_2 (float) : dephasing time  (seonds)
+        t_step (float) : Discretized time step over which the relaxation occurs over (seconds)
     
     Returns:
         qiskit.providers.aer.noise.NoiseModel
@@ -113,9 +113,9 @@ def create_pta_channel(T_1, T_2, t_step=10e-9):
 
     
     Args:
-        T_1 (float) : Relaxation time
-        T_2 (float) : dephasing time
-        t_step (float) : Discretized time step over which the relaxation occurs over
+        T_1 (float) : Relaxation time (seconds)
+        T_2 (float) : dephasing time (seconds)
+        t_step (float) : Discretized time step over which the relaxation occurs over (seconds)
     
     Returns:
         qiskit.providers.aer.noise.NoiseModel
