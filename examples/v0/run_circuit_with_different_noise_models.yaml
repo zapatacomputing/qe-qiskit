@@ -16,7 +16,7 @@ resources:
     type: git
     parameters:
       url: "git@github.com:zapatacomputing/qe-qiskit.git"
-      branch: "dev"
+      branch: "master"
 
 metadata:
   generateName: qiskit-noise-model-test-
@@ -58,8 +58,8 @@ spec:
             template: get-pta-noise-model
             arguments:
               parameters:
-                - T1: "0.0000751376101819768"
-                - T2: "0.00010789553929656504"
+                - T1: "0.00008"
+                - T2: "0.00010"
                 - t-step: "0.00000005"
                 - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
           # Create a random circuit
