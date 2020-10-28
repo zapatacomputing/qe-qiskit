@@ -11,8 +11,8 @@ from .basic import (get_qiskit_noise_model,
 
 class TestBasic(unittest.TestCase):
     def setUp(self):
-        # self.ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        # self.all_devices = ["ibmqx2"]
+        self.ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
+        self.all_devices = ["ibmqx2"]
         self.T_1 = 10e-7
         self.T_2 = 30e-7
         self.t_step = 10e-9
