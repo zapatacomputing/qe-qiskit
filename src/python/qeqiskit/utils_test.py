@@ -1,16 +1,18 @@
 import unittest
 import numpy as np
+import os
 import subprocess
 import json
 import qiskit.providers.aer.noise as AerNoise
 
 from zquantum.core.utils import load_noise_model, save_noise_model
-from .utils import save_qiskit_noise_model, load_qiskit_noise_model
-
+from .utils import save_qiskit_noise_model, load_qiskit_noise_model, save_kraus_operators
+from qeqiskit.noise.basic import create_amplitude_damping_noise,  get_kraus_matrices_from_ibm_noise_model
 
 class TestQiskitUtils(unittest.TestCase):
     def setUp(self):
-        pass
+        self.T_1 = 10e-7
+        self.t_step = 10e-9
 
     def test_save_qiskit_noise_model(self):
         # Given
@@ -90,3 +92,16 @@ class TestQiskitUtils(unittest.TestCase):
 
         # Cleanup
         subprocess.run(["rm", "noise_model.json"])
+
+    def test_save_kraus_operators(self):
+        noise_model = create_amplitude_damping_noise(self.T_1, self.t_step)
+        kraus_dict = get_kraus_matrices_from_ibm_noise_model(noise_model)
+        save_kraus_operators(kraus_dict, 'kraus_operators.json')
+
+        # Cleanup
+        os.remove("kraus_operators.json")
+
+
+
+     
+
