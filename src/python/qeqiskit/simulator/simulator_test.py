@@ -118,20 +118,20 @@ class TestQiskitSimulator(unittest.TestCase, QuantumSimulatorTests):
             # Initialize in |1> state
             circuit = Circuit(Program(X(0)))
             # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-            circuit += Circuit(Program([X(0) for _ in range(100)]))
+            circuit += Circuit(Program([X(0) for _ in range(50)]))
             qubit_operator = QubitOperator("Z0")
             simulator.n_samples = 8192
             # When
-            expectation_values_100_gates = simulator.get_expectation_values(
+            expectation_values_50_gates = simulator.get_expectation_values(
                 circuit, qubit_operator
             )
             # Then
-            self.assertIsInstance(expectation_values_100_gates, ExpectationValues)
-            self.assertEqual(len(expectation_values_100_gates.values), 1)
-            self.assertGreater(expectation_values_100_gates.values[0], -1)
-            self.assertLess(expectation_values_100_gates.values[0], 0.0)
+            self.assertIsInstance(expectation_values_50_gates, ExpectationValues)
+            self.assertEqual(len(expectation_values_50_gates.values), 1)
+            self.assertGreater(expectation_values_50_gates.values[0], -1)
+            self.assertLess(expectation_values_50_gates.values[0], 0.0)
             self.assertGreater(
-                expectation_values_100_gates.values[0],
+                expectation_values_50_gates.values[0],
                 expectation_values_10_gates.values[0],
             )
             self.assertIsInstance(simulator, QiskitSimulator)
@@ -157,7 +157,7 @@ class TestQiskitSimulator(unittest.TestCase, QuantumSimulatorTests):
         # Initialize in |1> state
         circuit = Circuit(Program(X(0)))
         # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-        circuit += Circuit(Program([X(0) for _ in range(100)]))
+        circuit += Circuit(Program([X(0) for _ in range(50)]))
 
         # When
         expectation_values_no_compilation = simulator.get_expectation_values(
