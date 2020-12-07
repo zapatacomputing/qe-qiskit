@@ -44,7 +44,7 @@ class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
             self.assertIn("opt_params", results.keys())
             self.assertIn("history", results.keys())
 
-    def test_optmizer_records_history_if_keep_value_history_is_added_as_option(self):
+    def test_optimizer_records_history_if_keep_value_history_is_added_as_option(self):
         optimizer = QiskitOptimizer(
             method="SPSA",
             options={"keep_value_history": True}
@@ -59,7 +59,7 @@ class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
 
         self.assertEqual(result.history, cost_function.history)
 
-    def test_optimzier_does_not_record_history_if_keep_value_history_is_set_to_false(self):
+    def test_optimizier_does_not_record_history_if_keep_value_history_is_set_to_false(self):
         optimizer = QiskitOptimizer(
             method="SPSA",
             options={"keep_value_history": False}
