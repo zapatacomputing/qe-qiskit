@@ -1,4 +1,7 @@
 import unittest
+
+from zquantum.core.history.recorder import recorder
+
 from .optimizer import QiskitOptimizer
 from zquantum.core.interfaces.optimizer_test import OptimizerTests
 import numpy as np
@@ -40,3 +43,39 @@ class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
             self.assertIn("opt_value", results.keys())
             self.assertIn("opt_params", results.keys())
             self.assertIn("history", results.keys())
+
+    def test_optmizer_records_history_if_keep_value_history_is_added_as_option(self):
+        optimizer = QiskitOptimizer(
+            method="SPSA",
+            options={"keep_value_history": True}
+        )
+
+        # To check that history is recorded correctly, we wrap cost_function
+        # with a recorder. Optimizer should wrap it a second time and
+        # therefore we can compare two histories to see if they agree.
+        cost_function = recorder(sum_x_squared)
+
+        result = optimizer.minimize(cost_function, np.array([-1, 1]))
+
+        self.assertEqual(result.history, cost_function.history)
+
+    def test_optimzier_does_not_record_history_if_keep_value_history_is_set_to_false(self):
+        optimizer = QiskitOptimizer(
+            method="SPSA",
+            options={"keep_value_history": False}
+        )
+
+        result = optimizer.minimize(sum_x_squared, np.array([-2, 0.5]))
+
+        self.assertEqual(result.history, [])
+
+    def _test_optimizer_does_not_record_history_if_keep_value_history_is_not_present_in_options(self):
+        self.assertTrue(True)
+
+        optimizer = QiskitOptimizer(
+            method="AMSGRAD",
+        )
+
+        result = optimizer.minimize(sum_x_squared, np.array([-2, 0.5]))
+
+        self.assertEqual(result.history, [])

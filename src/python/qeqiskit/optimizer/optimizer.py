@@ -1,3 +1,4 @@
+from zquantum.core.history.recorder import recorder
 from zquantum.core.interfaces.optimizer import Optimizer, optimization_result
 from qiskit.aqua.components.optimizers import SPSA, ADAM
 from scipy.optimize import OptimizeResult
@@ -29,14 +30,7 @@ class QiskitOptimizer(Optimizer):
 
         self.method = method
         self.options = options
-        if "keep_value_history" not in self.options.keys():
-            self.keep_value_history = False
-        else:
-            self.keep_value_history = self.options["keep_value_history"]
-            del self.options["keep_value_history"]
-            Warning(
-                "Orquestra does not support keeping history of the evaluations yet."
-            )
+        self.keep_value_history = self.options.pop("keep_value_history", False)
 
     def minimize(self, cost_function, initial_params=None):
         """
@@ -59,7 +53,11 @@ class QiskitOptimizer(Optimizer):
             optimizer = ADAM(**self.options)
 
         number_of_variables = len(initial_params)
-        cost_function_wrapper = _CostFunctionWrapper(cost_function)
+
+        if self.keep_value_history:
+            cost_function_wrapper = recorder(cost_function)
+        else:
+            cost_function_wrapper = _CostFunctionWrapper(cost_function)
 
         gradient_function = None
         if hasattr(cost_function, "gradient") and callable(
@@ -74,10 +72,17 @@ class QiskitOptimizer(Optimizer):
             gradient_function=gradient_function,
         )
 
+        if self.keep_value_history:
+            nfev = len(cost_function_wrapper.history)
+            history = cost_function_wrapper.history
+        else:
+            nfev = cost_function_wrapper.number_of_calls
+            history = []
+
         return optimization_result(
             opt_value=value,
             opt_params=solution,
             nit=nit,
-            history=[],
-            nfev=cost_function_wrapper.number_of_calls,
+            history=history,
+            nfev=nfev,
         )
