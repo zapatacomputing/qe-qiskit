@@ -29,9 +29,8 @@ setuptools.setup(
     install_requires=[
         "qiskit==0.18.3",
         "qiskit-ibmq-provider==0.6.1",
-        "pyquil==2.17.0",
+        "pyquil",
         "numpy>=1.18.1",
         "z-quantum-core",
-        "qe-openfermion",
     ],
 )
