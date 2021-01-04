@@ -218,7 +218,6 @@ class QiskitSimulator(QuantumSimulator):
         """
         self.num_circuits_run += 1
         self.num_jobs_run += 1
-        # operator = change_operator_type(qubit_operator, QubitOperator)
         wavefunction = self.get_wavefunction(circuit)
 
         # Pyquil does not support PauliSums with no terms.
