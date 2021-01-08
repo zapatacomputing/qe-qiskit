@@ -27,6 +27,5 @@ setuptools.setup(
         "pyquil==2.17.0",
         "numpy>=1.18.1",
         "z-quantum-core",
-        "qe-openfermion",
     ],
 )
