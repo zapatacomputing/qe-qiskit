@@ -15,6 +15,9 @@ from zquantum.core.measurement import (
 
 
 class QiskitSimulator(QuantumSimulator):
+
+    supports_batching = True
+
     def __init__(
         self,
         device_name,
@@ -44,12 +47,11 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             qeqiskit.backend.QiskitSimulator
         """
+        super().__init__(n_samples)
         self.device_name = device_name
         self.n_samples = n_samples
         self.noise_model = noise_model
         self.device_connectivity = device_connectivity
-        self.num_circuits_run = 0
-        self.num_jobs_run = 0
 
         if basis_gates is None and self.noise_model is not None:
             self.basis_gates = self.noise_model.basis_gates
@@ -96,8 +98,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             a list of bitstrings (a list of tuples)
         """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
+        super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
 
         ibmq_circuit = circuit.to_qiskit()
@@ -140,8 +141,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             a list of lists of bitstrings (a list of lists of tuples)
         """
-        self.num_circuits_run += len(circuitset)
-        self.num_jobs_run += 1
+        super().run_circuitset_and_measure(circuitset)
         ibmq_circuitset = []
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
@@ -180,80 +180,6 @@ class QiskitSimulator(QuantumSimulator):
 
         return measurements_set
 
-    def get_expectation_values(self, circuit, qubit_operator, **kwargs):
-        """Run a circuit and measure the expectation values with respect to a
-        given operator. Note: the number of bitstrings measured is derived
-        from self.n_samples - if self.n_samples = None, then this will use
-        self.get_exact_expectation_values
-
-        Args:
-            circuit (zquantum.core.circuit.Circuit): the circuit to prepare the state
-            qubit_operator (openfermion.ops.QubitOperator): the operator to measure
-        Returns:
-            zquantum.core.measurement.ExpectationValues: the expectation values
-                of each term in the operator
-        """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
-        if self.n_samples == None:
-            return self.get_exact_expectation_values(circuit, qubit_operator, **kwargs)
-        else:
-            operator = change_operator_type(qubit_operator, IsingOperator)
-            measurements = self.run_circuit_and_measure(circuit)
-            expectation_values = measurements.get_expectation_values(operator)
-
-            expectation_values = expectation_values_to_real(expectation_values)
-            return expectation_values
-
-    def get_exact_expectation_values(self, circuit, qubit_operator, **kwargs):
-        """Run a circuit to prepare a wavefunction and measure the exact
-        expectation values with respect to a given operator.
-
-        Args:
-            circuit (zquantum.core.circuit.Circuit): the circuit to prepare the state
-            qubit_operator (openfermion.ops.QubitOperator): the operator to measure
-        Returns:
-            zquantum.core.measurement.ExpectationValues: the expectation values
-                of each term in the operator
-        """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
-        wavefunction = self.get_wavefunction(circuit)
-
-        # Pyquil does not support PauliSums with no terms.
-        if len(qubit_operator.terms) == 0:
-            return ExpectationValues(np.zeros((0,)))
-
-        values = []
-
-        for op in qubit_operator:
-            values.append(expectation(op, wavefunction))
-        return expectation_values_to_real(ExpectationValues(np.asarray(values)))
-
-    def get_expectation_values_for_circuitset(self, circuitset, operator, **kwargs):
-        """Run a set of circuits and measure the expectation values with respect to a
-        given operator.
-
-        Args:
-            circuitset (list of zquantum.core.circuit.Circuit objects): the circuits to prepare the states
-            operator (openfermion.ops.IsingOperator or openfermion.ops.QubitOperator): the operator to measure
-        Returns:
-            list of zquantum.core.measurement.ExpectationValues objects: a list of the expectation values of each
-                term in the operator with respect to the various state preparation circuits
-        """
-        self.num_circuits_run += len(circuitset)
-        self.num_jobs_run += 1
-        operator = change_operator_type(operator, IsingOperator)
-        measurements_set = self.run_circuitset_and_measure(circuitset)
-
-        expectation_values_set = []
-        for measurements in measurements_set:
-            expectation_values = measurements.get_expectation_values(operator)
-            expectation_values = expectation_values_to_real(expectation_values)
-            expectation_values_set.append(expectation_values)
-
-        return expectation_values_set
-
     def get_wavefunction(self, circuit):
         """Run a circuit and get the wavefunction of the resulting statevector.
 
@@ -262,8 +188,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             pyquil.wavefunction.Wavefunction
         """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
+        super().get_wavefunction(circuit)
         ibmq_circuit = circuit.to_qiskit()
 
         coupling_map = None
