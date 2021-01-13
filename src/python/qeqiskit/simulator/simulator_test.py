@@ -7,7 +7,10 @@ from openfermion.ops import QubitOperator
 import qiskit.providers.aer.noise as AerNoise
 
 from zquantum.core.circuit import Circuit
-from zquantum.core.interfaces.backend_test import QuantumSimulatorTests
+from zquantum.core.interfaces.backend_test import (
+    QuantumSimulatorTests,
+    QuantumSimulatorGatesTest,
+)
 from zquantum.core.measurement import ExpectationValues
 from ..simulator import QiskitSimulator
 from ..noise import get_qiskit_noise_model
@@ -196,3 +199,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             expectation_values_full_compilation.values[0]
             < expectation_values_no_compilation.values[0]
         )
+
+
+class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
+    pass

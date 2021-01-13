@@ -1,5 +1,6 @@
 import numpy as np
-from qiskit import Aer, IBMQ, execute
+from qiskit import Aer, execute
+from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
 from pyquil.wavefunction import Wavefunction

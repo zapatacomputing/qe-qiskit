@@ -1,4 +1,5 @@
-from qiskit import IBMQ, execute, QuantumRegister
+from qiskit import execute, QuantumRegister
+from qiskit.providers.ibmq import IBMQ
 from qiskit.ignis.mitigation.measurement import (
     complete_meas_cal,
     CompleteMeasFitter,
