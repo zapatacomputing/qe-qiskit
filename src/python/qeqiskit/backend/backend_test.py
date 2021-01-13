@@ -8,7 +8,7 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from zquantum.core.circuit import Circuit
 from zquantum.core.interfaces.backend_test import (
     QuantumBackendTests,
-    QuantumBackendGatesTest,
+    QuantumBackendGatesTests,
 )
 from .backend import QiskitBackend
 
@@ -87,5 +87,5 @@ class TestQiskitBackend(QuantumBackendTests):
             QiskitBackend("DEVICE DOES NOT EXIST")
 
 
-class TestQiskitBackendGates(QuantumBackendGatesTest):
+class TestQiskitBackendGates(QuantumBackendGatesTests):
     pass
