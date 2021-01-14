@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from qiskit import Aer, execute
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
@@ -17,6 +18,7 @@ from zquantum.core.measurement import (
 
 class QiskitSimulator(QuantumSimulator):
     supports_batching = True
+    batch_size = sys.maxsize
 
     def __init__(
         self,
@@ -140,7 +142,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             a list of lists of bitstrings (a list of lists of tuples)
         """
-        self.number_of_circuits_run += len(circuitset)
+        super().run_circuitset_and_measure(circuitset)
         ibmq_circuitset = []
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
@@ -167,7 +169,6 @@ class QiskitSimulator(QuantumSimulator):
         )
         measurements_set = []
         for i, ibmq_circuit in enumerate(ibmq_circuitset):
-            self.number_of_jobs_run += 1
             circuit_counts = job.result().get_counts(ibmq_circuit)
 
             # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings

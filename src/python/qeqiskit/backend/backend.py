@@ -16,6 +16,7 @@ from zquantum.core.measurement import (
 
 class QiskitBackend(QuantumBackend):
     supports_batching = True
+    batch_size = 75
 
     def __init__(
         self,
@@ -83,7 +84,6 @@ class QiskitBackend(QuantumBackend):
         ibmq_circuit = circuit.to_qiskit()
         ibmq_circuit.barrier(range(num_qubits))
         ibmq_circuit.measure(range(num_qubits), range(num_qubits))
-        super().run_circuit_and_measure(circuit)
 
         # Run job on device and get counts
         raw_counts = (
@@ -120,7 +120,6 @@ class QiskitBackend(QuantumBackend):
         """
         super().run_circuitset_and_measure(circuitset)
         ibmq_circuitset = []
-        self.number_of_circuits_run += len(circuitset)
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
 
@@ -160,7 +159,6 @@ class QiskitBackend(QuantumBackend):
         for i, ibmq_circuit in enumerate(ibmq_circuitset):
             job = jobs[int(i / self.batch_size)]
             circuit_counts = job.result().get_counts(ibmq_circuit)
-            self.number_of_jobs_run += 1
 
             if self.readout_correction:
                 circuit_counts = self.apply_readout_correction(circuit_counts, kwargs)
