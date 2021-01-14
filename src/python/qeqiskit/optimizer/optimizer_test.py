@@ -28,13 +28,10 @@ def optimizer(request):
 
 
 class TestQiskitOptimizerTests(OptimizerTests):
-
     def test_optimizer_succeeds_on_cost_function_without_gradient(self, optimizer):
         cost_function = sum_x_squared
 
-        results = optimizer.minimize(
-            cost_function, initial_params=np.array([1, -1])
-        )
+        results = optimizer.minimize(cost_function, initial_params=np.array([1, -1]))
         assert results.opt_value == pytest.approx(0, abs=1e-5)
         assert results.opt_params == pytest.approx(np.zeros(2), abs=1e-4)
 
@@ -44,7 +41,9 @@ class TestQiskitOptimizerTests(OptimizerTests):
         assert "opt_params" in results
         assert "history" in results
 
-    def test_optimizer_records_history_if_keep_value_history_is_added_as_option(self, optimizer):
+    def test_optimizer_records_history_if_keep_value_history_is_added_as_option(
+        self, optimizer
+    ):
         optimizer.keep_value_history = True
 
         # To check that history is recorded correctly, we wrap cost_function
@@ -56,14 +55,18 @@ class TestQiskitOptimizerTests(OptimizerTests):
 
         assert result.history == cost_function.history
 
-    def test_optimizier_does_not_record_history_if_keep_value_history_is_set_to_false(self, optimizer):
+    def test_optimizier_does_not_record_history_if_keep_value_history_is_set_to_false(
+        self, optimizer
+    ):
         optimizer.keep_value_history = False
 
         result = optimizer.minimize(sum_x_squared, np.array([-2, 0.5]))
 
         assert result.history == []
 
-    def test_optimizer_does_not_record_history_if_keep_value_history_by_default(self, optimizer):
+    def test_optimizer_does_not_record_history_if_keep_value_history_by_default(
+        self, optimizer
+    ):
 
         result = optimizer.minimize(sum_x_squared, np.array([-2, 0.5]))
 
