@@ -45,6 +45,9 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             qeqiskit.backend.QiskitSimulator
         """
+        self.number_of_circuits_run = 0
+        self.number_of_jobs_run = 0
+
         self.device_name = device_name
         self.n_samples = n_samples
         self.noise_model = noise_model
@@ -142,7 +145,6 @@ class QiskitSimulator(QuantumSimulator):
             a list of lists of bitstrings (a list of lists of tuples)
         """
         self.num_circuits_run += len(circuitset)
-        self.num_jobs_run += 1
         ibmq_circuitset = []
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
@@ -169,6 +171,7 @@ class QiskitSimulator(QuantumSimulator):
         )
         measurements_set = []
         for i, ibmq_circuit in enumerate(ibmq_circuitset):
+            self.num_jobs_run += 1
             circuit_counts = job.result().get_counts(ibmq_circuit)
 
             # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
@@ -194,8 +197,6 @@ class QiskitSimulator(QuantumSimulator):
             zquantum.core.measurement.ExpectationValues: the expectation values
                 of each term in the operator
         """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
         if self.n_samples == None:
             return self.get_exact_expectation_values(circuit, qubit_operator, **kwargs)
         else:
@@ -217,8 +218,6 @@ class QiskitSimulator(QuantumSimulator):
             zquantum.core.measurement.ExpectationValues: the expectation values
                 of each term in the operator
         """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
         wavefunction = self.get_wavefunction(circuit)
 
         # Pyquil does not support PauliSums with no terms.
@@ -242,8 +241,6 @@ class QiskitSimulator(QuantumSimulator):
             list of zquantum.core.measurement.ExpectationValues objects: a list of the expectation values of each
                 term in the operator with respect to the various state preparation circuits
         """
-        self.num_circuits_run += len(circuitset)
-        self.num_jobs_run += 1
         operator = change_operator_type(operator, IsingOperator)
         measurements_set = self.run_circuitset_and_measure(circuitset)
 
