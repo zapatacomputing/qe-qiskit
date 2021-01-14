@@ -1,15 +1,15 @@
-from qiskit import IBMQ, execute, QuantumRegister
+from qiskit import execute, QuantumRegister
+from qiskit.providers.ibmq import IBMQ
 from qiskit.ignis.mitigation.measurement import (
     complete_meas_cal,
     CompleteMeasFitter,
 )
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from openfermion.ops import IsingOperator
-from qeopenfermion import change_operator_type
+from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.measurement import (
     expectation_values_to_real,
-    ExpectationValues,
     Measurements,
 )
 
@@ -28,7 +28,7 @@ class QiskitBackend(QuantumBackend):
         optimization_level=0,
         **kwargs
     ):
-        """ Get a qiskit QPU that adheres to the 
+        """Get a qiskit QPU that adheres to the
         zquantum.core.interfaces.backend.QuantumBackend
 
         Args:
@@ -44,8 +44,8 @@ class QiskitBackend(QuantumBackend):
         Returns:
             qeqiskit.backend.QiskitBackend
         """
+        super().__init__(n_samples=n_samples)
         self.device_name = device_name
-        self.n_samples = n_samples
         self.batch_size = batch_size
 
         if api_token is not None:
@@ -66,7 +66,7 @@ class QiskitBackend(QuantumBackend):
         self.optimization_level = optimization_level
 
     def run_circuit_and_measure(self, circuit, **kwargs):
-        """ Run a circuit and measure a certain number of bitstrings. Note: the
+        """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
 
         Args:
@@ -80,6 +80,7 @@ class QiskitBackend(QuantumBackend):
         ibmq_circuit = circuit.to_qiskit()
         ibmq_circuit.barrier(range(num_qubits))
         ibmq_circuit.measure(range(num_qubits), range(num_qubits))
+        super().run_circuit_and_measure(circuit)
 
         # Run job on device and get counts
         raw_counts = (
@@ -105,7 +106,7 @@ class QiskitBackend(QuantumBackend):
         return measurements
 
     def run_circuitset_and_measure(self, circuitset, **kwargs):
-        """ Run a set of circuits and measure a certain number of bitstrings.
+        """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
 
         Args:
@@ -115,6 +116,7 @@ class QiskitBackend(QuantumBackend):
             a list of lists of bitstrings (a list of lists of tuples)
         """
         ibmq_circuitset = []
+        self.number_of_circuits_run += len(circuitset)
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
 
@@ -154,6 +156,7 @@ class QiskitBackend(QuantumBackend):
         for i, ibmq_circuit in enumerate(ibmq_circuitset):
             job = jobs[int(i / self.batch_size)]
             circuit_counts = job.result().get_counts(ibmq_circuit)
+            self.number_of_jobs_run += 1
 
             if self.readout_correction:
                 circuit_counts = self.apply_readout_correction(circuit_counts, kwargs)
@@ -169,7 +172,7 @@ class QiskitBackend(QuantumBackend):
         return measurements_set
 
     def get_expectation_values(self, circuit, operator, **kwargs):
-        """ Run a circuit and measure the expectation values with respect to a 
+        """Run a circuit and measure the expectation values with respect to a
         given operator. Note: the number of bitstrings measured is derived
         from self.n_samples - if self.n_samples = None, then this will use
         self.get_exact_expectation_values
@@ -188,14 +191,14 @@ class QiskitBackend(QuantumBackend):
         return expectation_values
 
     def get_expectation_values_for_circuitset(self, circuitset, operator, **kwargs):
-        """ Run a set of circuits and measure the expectation values with respect to a 
-        given operator. 
+        """Run a set of circuits and measure the expectation values with respect to a
+        given operator.
 
         Args:
             circuitset (list of zquantum.core.circuit.Circuit objects): the circuits to prepare the states
             operator (openfermion.ops.IsingOperator or openfermion.ops.QubitOperator): the operator to measure
         Returns:
-            list of zquantum.core.measurement.ExpectationValues objects: a list of the expectation values of each 
+            list of zquantum.core.measurement.ExpectationValues objects: a list of the expectation values of each
                 term in the operator with respect to the various state preparation circuits
         """
         operator = change_operator_type(operator, IsingOperator)
