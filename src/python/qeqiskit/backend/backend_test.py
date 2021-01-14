@@ -6,10 +6,7 @@ from qiskit import IBMQ
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 
 from zquantum.core.circuit import Circuit
-from zquantum.core.interfaces.backend_test import (
-    QuantumBackendTests,
-    QuantumBackendGatesTests,
-)
+from zquantum.core.interfaces.backend_test import QuantumBackendTests
 from .backend import QiskitBackend
 
 
@@ -23,18 +20,6 @@ from .backend import QiskitBackend
     ]
 )
 def backend(request):
-    return QiskitBackend(**request.param)
-
-@pytest.fixture(
-    params=[
-        {
-            "device_name": "ibmq_qasm_simulator",
-            "n_samples": 1,
-            "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
-        },
-    ]
-)
-def backend_for_gates_test(request):
     return QiskitBackend(**request.param)
 
 
@@ -97,7 +82,3 @@ class TestQiskitBackend(QuantumBackendTests):
         # Given/When/Then
         with pytest.raises(QiskitBackendNotFoundError):
             QiskitBackend("DEVICE DOES NOT EXIST")
-
-
-class TestQiskitBackendGates(QuantumBackendGatesTests):
-    pass
