@@ -7,20 +7,21 @@ import numpy as np
 import pytest
 
 
-@pytest.fixture(params=[
-    {"method": "ADAM"},
-    {
-        "method": "SPSA",
-        "options": {
-            "max_trials": int(1e5),
-            "c0": 1e-3,
-            "c1": 1e-4,
-            "c2": 1e-3,
-            "c3": 1e-4,
+@pytest.fixture(
+    params=[
+        {"method": "ADAM"},
+        {
+            "method": "SPSA",
+            "options": {
+                "maxiter": int(1e5),
+                "c0": 1e-3,
+                "c1": 1e-4,
+                "c2": 1e-3,
+                "c3": 1e-4,
+            },
         },
-    },
-    {"method": "AMSGRAD", "options": {"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4}}
-]
+        {"method": "AMSGRAD", "options": {"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4}},
+    ]
 )
 def optimizer(request):
     return QiskitOptimizer(**request.param)
