@@ -119,7 +119,7 @@ class QiskitBackend(QuantumBackend):
             a list of lists of bitstrings (a list of lists of tuples)
         """
         ibmq_circuitset = []
-        self.number_of_circuits_run += len(circuit_set)
+        self.number_of_circuits_run += len(circuitset)
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
 

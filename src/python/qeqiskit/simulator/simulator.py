@@ -52,8 +52,6 @@ class QiskitSimulator(QuantumSimulator):
         self.n_samples = n_samples
         self.noise_model = noise_model
         self.device_connectivity = device_connectivity
-        self.num_circuits_run = 0
-        self.num_jobs_run = 0
 
         if basis_gates is None and self.noise_model is not None:
             self.basis_gates = self.noise_model.basis_gates
@@ -100,8 +98,6 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             a list of bitstrings (a list of tuples)
         """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
         num_qubits = len(circuit.qubits)
 
         ibmq_circuit = circuit.to_qiskit()
@@ -132,6 +128,8 @@ class QiskitSimulator(QuantumSimulator):
         for bitstring in raw_counts.keys():
             reversed_counts[bitstring[::-1]] = raw_counts[bitstring]
 
+        self.number_of_circuits_run += 1
+        self.number_of_jobs_run += 1
         return Measurements.from_counts(reversed_counts)
 
     def run_circuitset_and_measure(self, circuitset, **kwargs):
@@ -144,7 +142,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             a list of lists of bitstrings (a list of lists of tuples)
         """
-        self.num_circuits_run += len(circuitset)
+        self.number_of_circuits_run += len(circuitset)
         ibmq_circuitset = []
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
@@ -171,7 +169,7 @@ class QiskitSimulator(QuantumSimulator):
         )
         measurements_set = []
         for i, ibmq_circuit in enumerate(ibmq_circuitset):
-            self.num_jobs_run += 1
+            self.number_of_jobs_run += 1
             circuit_counts = job.result().get_counts(ibmq_circuit)
 
             # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
@@ -260,8 +258,8 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             pyquil.wavefunction.Wavefunction
         """
-        self.num_circuits_run += 1
-        self.num_jobs_run += 1
+        self.number_of_circuits_run += 1
+        self.number_of_jobs_run += 1
         ibmq_circuit = circuit.to_qiskit()
 
         coupling_map = None
