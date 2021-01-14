@@ -1,54 +1,50 @@
 import unittest
-
 from zquantum.core.history.recorder import recorder
-
 from .optimizer import QiskitOptimizer
 from zquantum.core.interfaces.optimizer_test import OptimizerTests
-import numpy as np
 from zquantum.core.interfaces.optimizer_test import sum_x_squared
+import numpy as np
+import pytest
 
 
-class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
-    def setUp(self):
-        self.optimizers = [
-            QiskitOptimizer(method="ADAM"),
-            QiskitOptimizer(
-                method="SPSA",
-                options={
-                    "max_trials": int(1e5),
-                    "c0": 1e-3,
-                    "c1": 1e-4,
-                    "c2": 1e-3,
-                    "c3": 1e-4,
-                },
-            ),
-            QiskitOptimizer(
-                method="AMSGRAD", options={"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4}
-            ),
-        ]
+@pytest.fixture(
+    params=[
+        {"method": "ADAM"},
+        {
+            "method": "SPSA",
+            "options": {
+                "maxiter": int(1e5),
+                "c0": 1e-3,
+                "c1": 1e-4,
+                "c2": 1e-3,
+                "c3": 1e-4,
+            },
+        },
+        {"method": "AMSGRAD", "options": {"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4}},
+    ]
+)
+def optimizer(request):
+    return QiskitOptimizer(**request.param)
 
-    def test_optimizer_succeeds_on_cost_function_without_gradient(self):
-        for optimizer in self.optimizers:
-            cost_function = sum_x_squared
 
-            results = optimizer.minimize(
-                cost_function, initial_params=np.array([1, -1])
-            )
-            self.assertAlmostEqual(results.opt_value, 0, places=5)
-            self.assertAlmostEqual(results.opt_params[0], 0, places=4)
-            self.assertAlmostEqual(results.opt_params[1], 0, places=4)
+class TestQiskitOptimizerTests(OptimizerTests):
+    def test_optimizer_succeeds_on_cost_function_without_gradient(self, optimizer):
+        cost_function = sum_x_squared
 
-            self.assertIn("nfev", results.keys())
-            self.assertIn("nit", results.keys())
-            self.assertIn("opt_value", results.keys())
-            self.assertIn("opt_params", results.keys())
-            self.assertIn("history", results.keys())
+        results = optimizer.minimize(cost_function, initial_params=np.array([1, -1]))
+        assert results.opt_value == pytest.approx(0, abs=1e-5)
+        assert results.opt_params == pytest.approx(np.zeros(2), abs=1e-4)
 
-    def test_optimizer_records_history_if_keep_value_history_is_added_as_option(self):
-        optimizer = QiskitOptimizer(
-            method="SPSA",
-            options={"keep_value_history": True}
-        )
+        assert "nfev" in results
+        assert "nit" in results
+        assert "opt_value" in results
+        assert "opt_params" in results
+        assert "history" in results
+
+    def test_optimizer_records_history_if_keep_value_history_is_added_as_option(
+        self, optimizer
+    ):
+        optimizer.keep_value_history = True
 
         # To check that history is recorded correctly, we wrap cost_function
         # with a recorder. Optimizer should wrap it a second time and
@@ -57,25 +53,21 @@ class QiskitOptimizerTests(unittest.TestCase, OptimizerTests):
 
         result = optimizer.minimize(cost_function, np.array([-1, 1]))
 
-        self.assertEqual(result.history, cost_function.history)
+        assert result.history == cost_function.history
 
-    def test_optimizier_does_not_record_history_if_keep_value_history_is_set_to_false(self):
-        optimizer = QiskitOptimizer(
-            method="SPSA",
-            options={"keep_value_history": False}
-        )
-
-        result = optimizer.minimize(sum_x_squared, np.array([-2, 0.5]))
-
-        self.assertEqual(result.history, [])
-
-    def _test_optimizer_does_not_record_history_if_keep_value_history_is_not_present_in_options(self):
-        self.assertTrue(True)
-
-        optimizer = QiskitOptimizer(
-            method="AMSGRAD",
-        )
+    def test_optimizier_does_not_record_history_if_keep_value_history_is_set_to_false(
+        self, optimizer
+    ):
+        optimizer.keep_value_history = False
 
         result = optimizer.minimize(sum_x_squared, np.array([-2, 0.5]))
 
-        self.assertEqual(result.history, [])
+        assert result.history == []
+
+    def test_optimizer_does_not_record_history_if_keep_value_history_by_default(
+        self, optimizer
+    ):
+
+        result = optimizer.minimize(sum_x_squared, np.array([-2, 0.5]))
+
+        assert result.history == []

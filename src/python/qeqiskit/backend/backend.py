@@ -1,4 +1,5 @@
-from qiskit import IBMQ, execute, QuantumRegister
+from qiskit import execute, QuantumRegister
+from qiskit.providers.ibmq import IBMQ
 from qiskit.ignis.mitigation.measurement import (
     complete_meas_cal,
     CompleteMeasFitter,
@@ -43,8 +44,8 @@ class QiskitBackend(QuantumBackend):
         Returns:
             qeqiskit.backend.QiskitBackend
         """
+        super().__init__(n_samples=n_samples)
         self.device_name = device_name
-        self.n_samples = n_samples
         self.batch_size = batch_size
 
         if api_token is not None:
@@ -79,6 +80,7 @@ class QiskitBackend(QuantumBackend):
         ibmq_circuit = circuit.to_qiskit()
         ibmq_circuit.barrier(range(num_qubits))
         ibmq_circuit.measure(range(num_qubits), range(num_qubits))
+        super().run_circuit_and_measure(circuit)
 
         # Run job on device and get counts
         raw_counts = (
@@ -114,6 +116,7 @@ class QiskitBackend(QuantumBackend):
             a list of lists of bitstrings (a list of lists of tuples)
         """
         ibmq_circuitset = []
+        self.number_of_circuits_run += len(circuitset)
         for circuit in circuitset:
             num_qubits = len(circuit.qubits)
 
@@ -153,6 +156,7 @@ class QiskitBackend(QuantumBackend):
         for i, ibmq_circuit in enumerate(ibmq_circuitset):
             job = jobs[int(i / self.batch_size)]
             circuit_counts = job.result().get_counts(ibmq_circuit)
+            self.number_of_jobs_run += 1
 
             if self.readout_correction:
                 circuit_counts = self.apply_readout_correction(circuit_counts, kwargs)
