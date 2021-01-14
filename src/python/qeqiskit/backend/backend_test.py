@@ -25,6 +25,18 @@ from .backend import QiskitBackend
 def backend(request):
     return QiskitBackend(**request.param)
 
+@pytest.fixture(
+    params=[
+        {
+            "device_name": "ibmq_qasm_simulator",
+            "n_samples": 1,
+            "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
+        },
+    ]
+)
+def backend_for_gates_test(request):
+    return QiskitBackend(**request.param)
+
 
 class TestQiskitBackend(QuantumBackendTests):
     def test_run_circuitset_and_measure(self, backend):
