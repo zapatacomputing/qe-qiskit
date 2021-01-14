@@ -44,10 +44,8 @@ class QiskitBackend(QuantumBackend):
         Returns:
             qeqiskit.backend.QiskitBackend
         """
-        self.number_of_circuits_run = 0
-        self.number_of_jobs_run = 0
+        super().__init__(n_samples=n_samples)
         self.device_name = device_name
-        self.n_samples = n_samples
         self.batch_size = batch_size
 
         if api_token is not None:
@@ -82,8 +80,7 @@ class QiskitBackend(QuantumBackend):
         ibmq_circuit = circuit.to_qiskit()
         ibmq_circuit.barrier(range(num_qubits))
         ibmq_circuit.measure(range(num_qubits), range(num_qubits))
-        self.number_of_circuits_run += 1
-        self.number_of_jobs_run += 1
+        super().run_circuit_and_measure(circuit)
 
         # Run job on device and get counts
         raw_counts = (

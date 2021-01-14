@@ -45,11 +45,8 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             qeqiskit.backend.QiskitSimulator
         """
-        self.number_of_circuits_run = 0
-        self.number_of_jobs_run = 0
-
+        super().__init__(n_samples=n_samples)
         self.device_name = device_name
-        self.n_samples = n_samples
         self.noise_model = noise_model
         self.device_connectivity = device_connectivity
 
@@ -98,6 +95,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             a list of bitstrings (a list of tuples)
         """
+        super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
 
         ibmq_circuit = circuit.to_qiskit()
@@ -128,8 +126,6 @@ class QiskitSimulator(QuantumSimulator):
         for bitstring in raw_counts.keys():
             reversed_counts[bitstring[::-1]] = raw_counts[bitstring]
 
-        self.number_of_circuits_run += 1
-        self.number_of_jobs_run += 1
         return Measurements.from_counts(reversed_counts)
 
     def run_circuitset_and_measure(self, circuitset, **kwargs):
@@ -258,8 +254,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             pyquil.wavefunction.Wavefunction
         """
-        self.number_of_circuits_run += 1
-        self.number_of_jobs_run += 1
+        super().get_wavefunction(circuit)
         ibmq_circuit = circuit.to_qiskit()
 
         coupling_map = None
