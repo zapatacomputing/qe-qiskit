@@ -16,6 +16,8 @@ from zquantum.core.measurement import (
 
 
 class QiskitSimulator(QuantumSimulator):
+    supports_batching = True
+
     def __init__(
         self,
         device_name,

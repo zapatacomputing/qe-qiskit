@@ -15,6 +15,8 @@ from zquantum.core.measurement import (
 
 
 class QiskitBackend(QuantumBackend):
+    supports_batching = True
+
     def __init__(
         self,
         device_name,
