@@ -29,7 +29,7 @@ class QiskitBackend(QuantumBackend):
         api_token=None,
         readout_correction=False,
         optimization_level=0,
-        **kwargs
+        **kwargs,
     ):
         """Get a qiskit QPU that adheres to the
         zquantum.core.interfaces.backend.QuantumBackend
@@ -141,7 +141,10 @@ class QiskitBackend(QuantumBackend):
             n_duplicate_circuits.append(
                 math.ceil(n_samples_for_circuit / self.max_shots)
             )
-            ibmq_circuitset += (ibmq_circuit,) * n_duplicate_circuits[-1]
+
+            for i in range(n_duplicate_circuits[-1]):
+                ibmq_circuitset.append(ibmq_circuit.copy(f"{ibmq_circuit.name}_{i}"))
+
             if math.floor(n_samples_for_circuit / self.max_shots) > 0:
                 ibmq_n_samples.append(
                     self.max_shots * math.floor(n_samples_for_circuit / self.max_shots)
@@ -152,7 +155,7 @@ class QiskitBackend(QuantumBackend):
         # Run job on device and get counts
         experiments = []
         experiment_n_samples = []
-        while len(experiments) * self.batch_size < len(circuitset):
+        while len(experiments) * self.batch_size < len(ibmq_circuitset):
             experiments.append(
                 [
                     ibmq_circuitset[i]
@@ -160,7 +163,7 @@ class QiskitBackend(QuantumBackend):
                         len(experiments) * self.batch_size,
                         min(
                             len(experiments) * self.batch_size + self.batch_size,
-                            len(circuitset),
+                            len(ibmq_circuitset),
                         ),
                     )
                 ]
@@ -172,27 +175,33 @@ class QiskitBackend(QuantumBackend):
                         ibmq_n_samples[i]
                         for i in range(
                             len(experiments) * self.batch_size - self.batch_size,
-                            min(len(experiments) * self.batch_size, len(circuitset),),
+                            min(
+                                len(experiments) * self.batch_size,
+                                len(ibmq_circuitset),
+                            ),
                         )
                     ]
                 )
             )
 
+        for i, experiment in enumerate(experiments):
+            for circuit in experiment:
+                print(f"{i} {circuit.name}")
         jobs = [
             execute(
                 experiment,
                 self.device,
-                shots=experiment_n_samples,
+                shots=n_samples,
                 optimization_level=self.optimization_level,
             )
-            for experiment_n_samples, experiment in zip(
-                experiment_n_samples, experiments
-            )
+            for n_samples, experiment in zip(experiment_n_samples, experiments)
         ]
 
         ibmq_circuit_counts_set = []
         for i, ibmq_circuit in enumerate(ibmq_circuitset):
             job = jobs[int(i / self.batch_size)]
+            print(job)
+            print(ibmq_circuit.name)
             ibmq_circuit_counts_set.append(job.result().get_counts(ibmq_circuit))
 
         measurements_set = []

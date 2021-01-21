@@ -9,6 +9,8 @@ from zquantum.core.circuit import Circuit
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
 from .backend import QiskitBackend
 
+import math
+
 
 @pytest.fixture(
     params=[
@@ -36,6 +38,35 @@ class TestQiskitBackend(QuantumBackendTests):
         assert len(measurements_set) == num_circuits
         for measurements in measurements_set:
             assert len(measurements.bitstrings) == n_samples
+
+            # Then (since SPAM error could result in unexpected bitstrings, we make sure the most common bitstring is
+            #   the one we expect)
+            counts = measurements.get_counts()
+            assert max(counts, key=counts.get) == "100"
+
+    def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
+        # Given
+        num_circuits = 200
+        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        n_samples = 8193
+
+        # Verify that we are actually going to need to split circuits
+        assert n_samples > backend.max_shots
+
+        # Verify that we are actually going to need multiple batches
+        assert (
+            num_circuits * math.ceil(n_samples / backend.max_shots) > backend.batch_size
+        )
+
+        # When
+        backend.n_samples = n_samples
+        measurements_set = backend.run_circuitset_and_measure([circuit] * num_circuits)
+        # Then
+        assert len(measurements_set) == num_circuits
+        for measurements in measurements_set:
+            assert len(measurements.bitstrings) == n_samples or len(
+                measurements.bitstrings
+            ) == backend.max_shots * math.ceil(n_samples / backend.max_shots)
 
             # Then (since SPAM error could result in unexpected bitstrings, we make sure the most common bitstring is
             #   the one we expect)
