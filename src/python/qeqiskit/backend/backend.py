@@ -1,4 +1,4 @@
-from qiskit import execute, QuantumRegister
+from qiskit import execute, QuantumRegister, QuantumCircuit
 from qiskit.providers.ibmq import IBMQ
 from qiskit.ignis.mitigation.measurement import (
     complete_meas_cal,
@@ -6,6 +6,7 @@ from qiskit.ignis.mitigation.measurement import (
 )
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.result import Counts
+from qiskit.providers.ibmq.job import IBMQJob
 from openfermion.ops import IsingOperator
 from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumBackend
@@ -14,7 +15,7 @@ from zquantum.core.measurement import (
     expectation_values_to_real,
     Measurements,
 )
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import math
 
 
@@ -109,24 +110,27 @@ class QiskitBackend(QuantumBackend):
 
         return measurements
 
-    def run_circuitset_and_measure(
-        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None, **kwargs
-    ):
-        """Run a set of circuits and measure a certain number of bitstrings.
-        Note: the number of bitstrings measured is derived from self.n_samples
+    def expand_circuitset(
+        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None
+    ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
+        """Duplicate circuits whose requested number of measurements exceeds the
+        maximum allowed by the backend.
 
         Args:
-            circuitset (List[zquantum.core.circuit.Circuit]): the circuits to run
-            n_samples: The number of shots to perform on each circuit. If
-                None, then self.n_samples shots are performed for each circuit. 
-
+            circuitset: The circuits to be executed.
+            n_samples: A list of the number of samples to be collected for each
+                circuit. If None, self.n_samples is used for each circuit.
+        
         Returns:
-            a list of lists of bitstrings (a list of lists of tuples)
+            Tuple containing:
+            - The expanded list of circuits, converted to qiskit and each
+              assigned a unique name.
+            - An array indicating how many duplicates there are for each of the
+              original circuits. 
         """
-        super().run_circuitset_and_measure(circuitset)
         ibmq_circuitset = []
-        ibmq_n_samples = []
-        n_duplicate_circuits = []
+        n_samples_for_ibmq_circuits = []
+        multiplicities = []
 
         if not n_samples:
             n_samples = (self.n_samples,) * len(circuitset)
@@ -138,77 +142,103 @@ class QiskitBackend(QuantumBackend):
             ibmq_circuit.barrier(range(num_qubits))
             ibmq_circuit.measure(range(num_qubits), range(num_qubits))
 
-            n_duplicate_circuits.append(
-                math.ceil(n_samples_for_circuit / self.max_shots)
-            )
+            multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
 
-            for i in range(n_duplicate_circuits[-1]):
+            for i in range(multiplicities[-1]):
                 ibmq_circuitset.append(ibmq_circuit.copy(f"{ibmq_circuit.name}_{i}"))
 
             if math.floor(n_samples_for_circuit / self.max_shots) > 0:
-                ibmq_n_samples.append(
+                n_samples_for_ibmq_circuits.append(
                     self.max_shots * math.floor(n_samples_for_circuit / self.max_shots)
                 )
             if n_samples_for_circuit % self.max_shots != 0:
-                ibmq_n_samples.append(n_samples_for_circuit % self.max_shots)
+                n_samples_for_ibmq_circuits.append(
+                    n_samples_for_circuit % self.max_shots
+                )
+        return ibmq_circuitset, n_samples_for_ibmq_circuits, multiplicities
 
-        # Run job on device and get counts
-        experiments = []
-        experiment_n_samples = []
-        while len(experiments) * self.batch_size < len(ibmq_circuitset):
-            experiments.append(
+    def batch_experiments(
+        self, experiments: List[QuantumCircuit], n_samples_for_ibmq_circuits: List[int],
+    ) -> Tuple[List[List[QuantumCircuit]], List[int]]:
+        """Batch a set of experiments (circuits to be executed) into groups
+        whose size is no greater than the maximum allowed by the backend.
+
+        Args:
+            experiments: The circuits to be executed.
+            n_samples_for_ibmq_circuits: The number of samples desired for each
+                experiment.
+
+        Returns:
+            A tuple containing:
+            - A list of batches, where each batch is a list of experiments.
+            - An array containing the number of measurements that must be
+              performed for each batch so that each experiment receives at least
+              as many samples as specified by n_samples_for_ibmq_circuits.
+        """
+
+        batches = []
+        n_samples_for_batches = []
+        while len(batches) * self.batch_size < len(experiments):
+            batches.append(
                 [
-                    ibmq_circuitset[i]
+                    experiments[i]
                     for i in range(
-                        len(experiments) * self.batch_size,
+                        len(batches) * self.batch_size,
                         min(
-                            len(experiments) * self.batch_size + self.batch_size,
-                            len(ibmq_circuitset),
+                            len(batches) * self.batch_size + self.batch_size,
+                            len(experiments),
                         ),
                     )
                 ]
             )
 
-            experiment_n_samples.append(
+            n_samples_for_batches.append(
                 max(
                     [
-                        ibmq_n_samples[i]
+                        n_samples_for_ibmq_circuits[i]
                         for i in range(
-                            len(experiments) * self.batch_size - self.batch_size,
-                            min(
-                                len(experiments) * self.batch_size,
-                                len(ibmq_circuitset),
-                            ),
+                            len(batches) * self.batch_size - self.batch_size,
+                            min(len(batches) * self.batch_size, len(experiments),),
                         )
                     ]
                 )
             )
 
-        for i, experiment in enumerate(experiments):
-            for circuit in experiment:
-                print(f"{i} {circuit.name}")
-        jobs = [
-            execute(
-                experiment,
-                self.device,
-                shots=n_samples,
-                optimization_level=self.optimization_level,
-            )
-            for n_samples, experiment in zip(experiment_n_samples, experiments)
-        ]
+        return batches, n_samples_for_batches
 
+    def aggregregate_measurements(
+        self,
+        jobs: List[IBMQJob],
+        batches: List[List[QuantumCircuit]],
+        multiplicities: List[int],
+        **kwargs,
+    ):
+        """Combine samples from a circuit set that has been expanded and batched
+        to obtain a set of measurements for each of the original circuits. Also
+        applies readout correction after combining.
+
+        Args:
+            jobs: The submitted IBMQ jobs.
+            batches: The batches of experiments submitted.
+            multiplicities: The number of copies of each of the original
+                circuits.
+            kwargs: Passed to self.apply_readout_correction.
+        
+        Returns:
+            A list of list of measurements, where each list of measurements
+            corresponds to one of the circuits of the original (unexpanded)
+            circuit set. 
+        """
         ibmq_circuit_counts_set = []
-        for i, ibmq_circuit in enumerate(ibmq_circuitset):
-            job = jobs[int(i / self.batch_size)]
-            print(job)
-            print(ibmq_circuit.name)
-            ibmq_circuit_counts_set.append(job.result().get_counts(ibmq_circuit))
+        for job, batch in zip(jobs, batches):
+            for experiment in batch:
+                ibmq_circuit_counts_set.append(job.result().get_counts(experiment))
 
         measurements_set = []
         ibmq_circuit_index = 0
-        for duplicate_count in n_duplicate_circuits:
+        for multiplicity in multiplicities:
             combined_counts = Counts({})
-            for i in range(duplicate_count):
+            for i in range(multiplicity):
                 for bitstring, counts in ibmq_circuit_counts_set[
                     ibmq_circuit_index
                 ].items():
@@ -229,6 +259,43 @@ class QiskitBackend(QuantumBackend):
             measurements_set.append(measurements)
 
         return measurements_set
+
+    def run_circuitset_and_measure(
+        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None, **kwargs
+    ):
+        """Run a set of circuits and measure a certain number of bitstrings.
+        Note: the number of bitstrings measured is derived from self.n_samples
+
+        Args:
+            circuitset: the circuits to run
+            n_samples: The number of shots to perform on each circuit. If
+                None, then self.n_samples shots are performed for each circuit. 
+
+        Returns:
+            a list of lists of bitstrings (a list of lists of tuples)
+        """
+
+        experiments, n_samples_for_experiments, multiplicities = self.expand_circuitset(
+            circuitset, n_samples
+        )
+        batches, n_samples_for_batches = self.batch_experiments(
+            experiments, n_samples_for_experiments
+        )
+
+        jobs = [
+            execute(
+                batch,
+                self.device,
+                shots=n_samples,
+                optimization_level=self.optimization_level,
+            )
+            for n_samples, batch in zip(n_samples_for_batches, batches)
+        ]
+
+        self.number_of_circuits_run += len(circuitset)
+        self.number_of_jobs_run += len(experiments)
+
+        return self.aggregregate_measurements(jobs, batches, multiplicities)
 
     def apply_readout_correction(self, counts, qubit_list=None, **kwargs):
         if self.readout_correction_filter is None:
