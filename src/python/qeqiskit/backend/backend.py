@@ -80,35 +80,8 @@ class QiskitBackend(QuantumBackend):
         Returns:
             a list of bitstrings (a list of tuples)
         """
-        super().run_circuit_and_measure(circuit)
-        num_qubits = len(circuit.qubits)
 
-        ibmq_circuit = circuit.to_qiskit()
-        ibmq_circuit.barrier(range(num_qubits))
-        ibmq_circuit.measure(range(num_qubits), range(num_qubits))
-
-        # Run job on device and get counts
-        raw_counts = (
-            execute(
-                ibmq_circuit,
-                self.device,
-                shots=self.n_samples,
-                optimization_level=self.optimization_level,
-            )
-            .result()
-            .get_counts()
-        )
-
-        if self.readout_correction:
-            raw_counts = self.apply_readout_correction(raw_counts, kwargs)
-
-        # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
-        reversed_counts = {}
-        for bitstring in raw_counts.keys():
-            reversed_counts[bitstring[::-1]] = int(raw_counts[bitstring])
-        measurements = Measurements.from_counts(reversed_counts)
-
-        return measurements
+        return self.run_circuitset_and_measure([circuit], **kwargs)[0]
 
     def expand_circuitset(
         self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None
