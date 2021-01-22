@@ -26,6 +26,38 @@ def backend(request):
 
 
 class TestQiskitBackend(QuantumBackendTests):
+    def test_expand_circuitset(self, backend):
+        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        circuitset = (circuit,) * 2
+        backend.n_samples = backend.max_shots + 1
+
+        (
+            experiments,
+            n_samples_for_experiments,
+            multiplicities,
+        ) = backend.expand_circuitset(circuitset)
+        assert multiplicities == [2, 2]
+        assert n_samples_for_experiments == [
+            backend.n_samples - 1,
+            1,
+            backend.n_samples - 1,
+            1,
+        ]
+        assert len(set([circuit.name for circuit in experiments])) == 4
+
+    def test_batch_experiments(self, backend):
+        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        n_circuits = backend.batch_size + 1
+        experiments = (circuit.to_qiskit(),) * n_circuits
+        n_samples_for_ibmq_circuits = (10,) * n_circuits
+        batches, n_samples_for_batches = backend.batch_experiments(
+            experiments, n_samples_for_ibmq_circuits
+        )
+        assert len(batches) == 2
+        assert len(batches[0]) == backend.batch_size
+        assert len(batches[1]) == 1
+        assert n_samples_for_batches == [10, 10]
+
     def test_run_circuitset_and_measure(self, backend):
         # Given
         num_circuits = 10

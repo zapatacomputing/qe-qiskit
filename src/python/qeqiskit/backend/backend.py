@@ -212,7 +212,7 @@ class QiskitBackend(QuantumBackend):
         batches: List[List[QuantumCircuit]],
         multiplicities: List[int],
         **kwargs,
-    ):
+    ) -> List[Measurements]:
         """Combine samples from a circuit set that has been expanded and batched
         to obtain a set of measurements for each of the original circuits. Also
         applies readout correction after combining.
@@ -262,7 +262,7 @@ class QiskitBackend(QuantumBackend):
 
     def run_circuitset_and_measure(
         self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None, **kwargs
-    ):
+    ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
 
