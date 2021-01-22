@@ -4,6 +4,7 @@ from pyquil import Program
 from pyquil.gates import X, CNOT
 from qiskit import IBMQ
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
+from qiskit import execute
 
 from zquantum.core.circuit import Circuit
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
@@ -57,6 +58,26 @@ class TestQiskitBackend(QuantumBackendTests):
         assert len(batches[0]) == backend.batch_size
         assert len(batches[1]) == 1
         assert n_samples_for_batches == [10, 10]
+
+    def test_aggregate_measurements(self, backend):
+        circuit = Circuit(Program(X(0), CNOT(1, 2))).to_qiskit()
+        circuit.barrier(range(3))
+        circuit.measure(range(3), range(3))
+        batches = [
+            [circuit.copy("circuit1"), circuit.copy("circuit2")],
+            [circuit.copy("circuit3"), circuit.copy("circuit4")],
+        ]
+        multiplicities = [3, 1]
+        jobs = [execute(batch, backend.device, shots=10,) for batch in batches]
+
+        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        measurements_set = backend.aggregregate_measurements(
+            jobs, batches, multiplicities,
+        )
+
+        assert measurements_set[0].bitstrings == [(1, 0, 0),] * 30
+        assert measurements_set[1].bitstrings == [(1, 0, 0),] * 10
+        assert len(measurements_set) == 2
 
     def test_run_circuitset_and_measure(self, backend):
         # Given
