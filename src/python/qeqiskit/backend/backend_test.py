@@ -27,7 +27,7 @@ def backend(request):
 
 
 class TestQiskitBackend(QuantumBackendTests):
-    def test_expand_circuitset(self, backend):
+    def test_transform_circuitset_to_ibmq_experiments(self, backend):
         circuit = Circuit(Program(X(0), CNOT(1, 2)))
         circuitset = (circuit,) * 2
         backend.n_samples = backend.max_shots + 1
@@ -36,7 +36,7 @@ class TestQiskitBackend(QuantumBackendTests):
             experiments,
             n_samples_for_experiments,
             multiplicities,
-        ) = backend.expand_circuitset(circuitset)
+        ) = backend.transform_circuitset_to_ibmq_experiments(circuitset)
         assert multiplicities == [2, 2]
         assert n_samples_for_experiments == [
             backend.n_samples - 1,
