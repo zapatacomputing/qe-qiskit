@@ -75,15 +75,36 @@ class TestQiskitBackend(QuantumBackendTests):
             [circuit.copy("circuit3"), circuit.copy("circuit4")],
         ]
         multiplicities = [3, 1]
-        jobs = [execute(batch, backend.device, shots=10,) for batch in batches]
+        jobs = [
+            execute(
+                batch,
+                backend.device,
+                shots=10,
+            )
+            for batch in batches
+        ]
 
         circuit = self.x_cnot_circuit()
         measurements_set = backend.aggregregate_measurements(
-            jobs, batches, multiplicities,
+            jobs,
+            batches,
+            multiplicities,
         )
 
-        assert measurements_set[0].bitstrings == [(1, 0, 0),] * 30
-        assert measurements_set[1].bitstrings == [(1, 0, 0),] * 10
+        assert (
+            measurements_set[0].bitstrings
+            == [
+                (1, 0, 0),
+            ]
+            * 30
+        )
+        assert (
+            measurements_set[1].bitstrings
+            == [
+                (1, 0, 0),
+            ]
+            * 10
+        )
         assert len(measurements_set) == 2
 
     def test_run_circuitset_and_measure(self, backend):
@@ -107,7 +128,7 @@ class TestQiskitBackend(QuantumBackendTests):
     def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
         # Given
         num_circuits = 200
-        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        circuit = self.x_cnot_circuit()
         n_samples = 8193
 
         # Verify that we are actually going to need to split circuits
