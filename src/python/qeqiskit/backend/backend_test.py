@@ -1,11 +1,9 @@
 import pytest
 import os
-from pyquil import Program
-from pyquil.gates import X, CNOT
 from qiskit import IBMQ
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 
-from zquantum.core.circuit import Circuit
+from zquantum.core.circuit import Circuit, Gate, Circuit, Qubit
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
 from .backend import QiskitBackend
 
@@ -24,10 +22,19 @@ def backend(request):
 
 
 class TestQiskitBackend(QuantumBackendTests):
+    def x_cnot_circuit(self):
+        qubits = [Qubit(i) for i in range(3)]
+        X = Gate("X", qubits=[Qubit(0)])
+        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
+        circuit = Circuit()
+        circuit.qubits = qubits
+        circuit.gates = [X, CNOT]
+        return circuit
+
     def test_run_circuitset_and_measure(self, backend):
         # Given
         num_circuits = 10
-        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        circuit = self.x_cnot_circuit()
         n_samples = 100
         # When
         backend.n_samples = n_samples
@@ -51,7 +58,7 @@ class TestQiskitBackend(QuantumBackendTests):
             api_token=ibmq_api_token,
             readout_correction=True,
         )
-        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        circuit = self.x_cnot_circuit()
 
         # When
         backend.run_circuit_and_measure(circuit)
@@ -69,7 +76,7 @@ class TestQiskitBackend(QuantumBackendTests):
             api_token=ibmq_api_token,
             readout_correction=True,
         )
-        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        circuit = self.x_cnot_circuit()
 
         # When
         backend.run_circuitset_and_measure([circuit] * 10)
