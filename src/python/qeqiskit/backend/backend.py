@@ -83,11 +83,11 @@ class QiskitBackend(QuantumBackend):
 
         return self.run_circuitset_and_measure([circuit], **kwargs)[0]
 
-    def expand_circuitset(
+    def transform_circuitset_to_ibmq_experiments(
         self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
-        """Duplicate circuits whose requested number of measurements exceeds the
-        maximum allowed by the backend.
+        """Convert circuits to qiskit and duplicate those whose measurement
+        count exceeds the maximum allowed by the backend.
 
         Args:
             circuitset: The circuits to be executed.
@@ -248,9 +248,11 @@ class QiskitBackend(QuantumBackend):
             a list of lists of bitstrings (a list of lists of tuples)
         """
 
-        experiments, n_samples_for_experiments, multiplicities = self.expand_circuitset(
-            circuitset, n_samples
-        )
+        (
+            experiments,
+            n_samples_for_experiments,
+            multiplicities,
+        ) = self.transform_circuitset_to_ibmq_experiments(circuitset, n_samples)
         batches, n_samples_for_batches = self.batch_experiments(
             experiments, n_samples_for_experiments
         )
