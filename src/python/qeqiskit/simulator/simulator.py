@@ -1,5 +1,7 @@
 import numpy as np
 import sys
+from typing import Optional, List
+
 from qiskit import Aer, execute
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
@@ -10,6 +12,7 @@ from openfermion.ops import IsingOperator
 from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements
+from zquantum.core.circuit import Circuit
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -85,15 +88,19 @@ class QiskitSimulator(QuantumSimulator):
                 "Could not find simulator with name: {}".format(self.device_name)
             )
 
-    def run_circuit_and_measure(self, circuit, **kwargs):
+    def run_circuit_and_measure(
+        self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
+    ) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
 
         Args:
-            circuit (zquantum.core.circuit.Circuit): the circuit to prepare the state
+            circuit: the circuit to prepare the state
+            n_samples: The number of samples to collect. If None, the
+                number of samples is determined by the n_samples attribute.
 
         Returns:
-            a list of bitstrings (a list of tuples)
+            A Measurements object containing the observed bitstrings.
         """
         super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
@@ -106,12 +113,15 @@ class QiskitSimulator(QuantumSimulator):
         if self.device_connectivity is not None:
             coupling_map = CouplingMap(self.device_connectivity.connectivity)
 
+        if n_samples is None:
+            n_samples = self.n_samples
+
         # Run job on device and get counts
         raw_counts = (
             execute(
                 ibmq_circuit,
                 self.device,
-                shots=self.n_samples,
+                shots=n_samples,
                 noise_model=self.noise_model,
                 coupling_map=coupling_map,
                 basis_gates=self.basis_gates,
@@ -128,16 +138,23 @@ class QiskitSimulator(QuantumSimulator):
 
         return Measurements.from_counts(reversed_counts)
 
-    def run_circuitset_and_measure(self, circuitset, **kwargs):
+    def run_circuitset_and_measure(
+        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None, **kwargs
+    ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
 
         Args:
-            circuit (zquantum.core.circuit.Circuit): the circuit to prepare the state
-
+            circuit: the circuit to prepare the state
+            n_samples: The number of samples to collect for each circuit. If
+                None, the number of samples for each circuit is given by the
+                n_samples attribute.
         Returns:
-            a list of lists of bitstrings (a list of lists of tuples)
+            A list of Measurements objects containing the observed bitstrings.
         """
+        if n_samples is not None:
+            raise ValueError("Qiskit Aer integration does not yet support n_samples.")
+
         super().run_circuitset_and_measure(circuitset)
         ibmq_circuitset = []
         for circuit in circuitset:

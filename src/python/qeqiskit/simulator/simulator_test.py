@@ -28,22 +28,14 @@ def backend(request):
 
 
 @pytest.fixture(
-    params=[
-        {
-            "device_name": "statevector_simulator",
-        },
-    ]
+    params=[{"device_name": "statevector_simulator",},]
 )
 def wf_simulator(request):
     return QiskitSimulator(**request.param)
 
 
 @pytest.fixture(
-    params=[
-        {
-            "device_name": "qasm_simulator",
-        },
-    ]
+    params=[{"device_name": "qasm_simulator",},]
 )
 def sampling_simulator(request):
     return QiskitSimulator(**request.param)
@@ -208,6 +200,9 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             expectation_values_full_compilation.values[0]
             < expectation_values_no_compilation.values[0]
         )
+
+    def test_run_circuitset_and_measure_n_samples(self, backend):
+        pytest.xfail()
 
 
 class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
