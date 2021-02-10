@@ -70,15 +70,18 @@ class QiskitBackend(QuantumBackend):
         self.readout_correction_filter = None
         self.optimization_level = optimization_level
 
-    def run_circuit_and_measure(self, circuit, n_samples=None, **kwargs):
+    def run_circuit_and_measure(
+        self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
+    ) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
 
         Args:
-            circuit (zquantum.core.circuit.Circuit): the circuit to prepare the state
-
+            circuit: the circuit to prepare the state
+            n_samples: The number of samples to collect. If None, the
+                number of samples is determined by the n_samples attribute.
         Returns:
-            a list of bitstrings (a list of tuples)
+            A Measurements object containing the observed bitstrings.
         """
 
         return self.run_circuitset_and_measure(
@@ -247,7 +250,7 @@ class QiskitBackend(QuantumBackend):
                 None, then self.n_samples shots are performed for each circuit. 
 
         Returns:
-            a list of lists of bitstrings (a list of lists of tuples)
+            A list of Measurements objects containing the observed bitstrings.
         """
 
         (
