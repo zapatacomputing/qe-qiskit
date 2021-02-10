@@ -70,7 +70,7 @@ class QiskitBackend(QuantumBackend):
         self.readout_correction_filter = None
         self.optimization_level = optimization_level
 
-    def run_circuit_and_measure(self, circuit, **kwargs):
+    def run_circuit_and_measure(self, circuit, n_samples=None, **kwargs):
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
 
@@ -81,7 +81,9 @@ class QiskitBackend(QuantumBackend):
             a list of bitstrings (a list of tuples)
         """
 
-        return self.run_circuitset_and_measure([circuit], **kwargs)[0]
+        return self.run_circuitset_and_measure(
+            [circuit], [n_samples] if n_samples is not None else None, **kwargs
+        )[0]
 
     def transform_circuitset_to_ibmq_experiments(
         self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None

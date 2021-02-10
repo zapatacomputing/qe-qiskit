@@ -75,36 +75,15 @@ class TestQiskitBackend(QuantumBackendTests):
             [circuit.copy("circuit3"), circuit.copy("circuit4")],
         ]
         multiplicities = [3, 1]
-        jobs = [
-            execute(
-                batch,
-                backend.device,
-                shots=10,
-            )
-            for batch in batches
-        ]
+        jobs = [execute(batch, backend.device, shots=10,) for batch in batches]
 
         circuit = self.x_cnot_circuit()
         measurements_set = backend.aggregregate_measurements(
-            jobs,
-            batches,
-            multiplicities,
+            jobs, batches, multiplicities,
         )
 
-        assert (
-            measurements_set[0].bitstrings
-            == [
-                (1, 0, 0),
-            ]
-            * 30
-        )
-        assert (
-            measurements_set[1].bitstrings
-            == [
-                (1, 0, 0),
-            ]
-            * 10
-        )
+        assert measurements_set[0].bitstrings == [(1, 0, 0),] * 30
+        assert measurements_set[1].bitstrings == [(1, 0, 0),] * 10
         assert len(measurements_set) == 2
 
     def test_run_circuitset_and_measure(self, backend):
@@ -194,3 +173,52 @@ class TestQiskitBackend(QuantumBackendTests):
         # Given/When/Then
         with pytest.raises(QiskitBackendNotFoundError):
             QiskitBackend("DEVICE DOES NOT EXIST")
+
+    def test_run_circuitset_and_measure_n_samples(self, backend):
+        # We override the base test because the qiskit integration may return
+        # more samples than requested due to the fact that each circuit in a
+        # batch must have the same number of measurements.
+
+        # Note: this test may fail with noisy devices
+        # Given
+        backend.number_of_circuits_run = 0
+        backend.number_of_jobs_run = 0
+
+        qubits = [Qubit(i) for i in range(3)]
+        first_circuit = Circuit()
+        first_circuit.gates = [
+            Gate("X", qubits=[qubits[0]]),
+            Gate("X", qubits=[qubits[0]]),
+            Gate("X", qubits=[qubits[1]]),
+            Gate("X", qubits=[qubits[1]]),
+            Gate("X", qubits=[qubits[2]]),
+        ]
+        first_circuit.qubits = qubits
+
+        second_circuit = Circuit()
+        second_circuit.gates = [
+            Gate("X", qubits=[qubits[0]]),
+            Gate("X", qubits=[qubits[1]]),
+            Gate("X", qubits=[qubits[2]]),
+        ]
+        second_circuit.qubits = qubits
+
+        n_samples = [100, 105]
+
+        # When
+        backend.n_samples = n_samples
+        measurements_set = backend.run_circuitset_and_measure(
+            [first_circuit, second_circuit], n_samples
+        )
+
+        # Then (since SPAM error could result in unexpected bitstrings, we make sure the most common bitstring is
+        #   the one we expect)
+        counts = measurements_set[0].get_counts()
+        assert max(counts, key=counts.get) == "001"
+        counts = measurements_set[1].get_counts()
+        assert max(counts, key=counts.get) == "111"
+
+        assert len(measurements_set[0].bitstrings) >= n_samples[0]
+        assert len(measurements_set[1].bitstrings) >= n_samples[1]
+
+        assert backend.number_of_circuits_run == 2
