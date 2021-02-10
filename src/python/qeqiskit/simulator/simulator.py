@@ -7,13 +7,9 @@ from qiskit.transpiler import CouplingMap
 from pyquil.wavefunction import Wavefunction
 from openfermion.ops import IsingOperator
 
-from zquantum.core.openfermion import expectation, change_operator_type
+from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumSimulator
-from zquantum.core.measurement import (
-    expectation_values_to_real,
-    ExpectationValues,
-    Measurements,
-)
+from zquantum.core.measurement import Measurements
 
 
 class QiskitSimulator(QuantumSimulator):
