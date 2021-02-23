@@ -28,14 +28,22 @@ def backend(request):
 
 
 @pytest.fixture(
-    params=[{"device_name": "statevector_simulator",},]
+    params=[
+        {
+            "device_name": "statevector_simulator",
+        },
+    ]
 )
 def wf_simulator(request):
     return QiskitSimulator(**request.param)
 
 
 @pytest.fixture(
-    params=[{"device_name": "qasm_simulator",},]
+    params=[
+        {
+            "device_name": "qasm_simulator",
+        },
+    ]
 )
 def sampling_simulator(request):
     return QiskitSimulator(**request.param)
@@ -200,6 +208,40 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             expectation_values_full_compilation.values[0]
             < expectation_values_no_compilation.values[0]
         )
+
+    def test_simulator_fails_to_initialize_when_using_statevector_simulator_with_more_than_one_sample(
+        self,
+    ):
+        with pytest.raises(ValueError):
+            simulator = QiskitSimulator(
+                "statevector_simulator",
+                n_samples=2,
+            )
+
+    def test_simulator_correctly_initializes_when_using_statevector_simulator_with_one_sample(
+        self,
+    ):
+        simulator = QiskitSimulator(
+            "statevector_simulator",
+            n_samples=1,
+        )
+
+    def test_fails_when_calling_run_circuit_and_measure_on_statevector_simulator_with_n_samples_more_than_one(
+        self,
+    ):
+        simulator = QiskitSimulator(
+            "statevector_simulator",
+        )
+
+        qubits = [Qubit(i) for i in range(3)]
+        X = Gate("X", qubits=[Qubit(0)])
+        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
+        circuit = Circuit()
+        circuit.qubits = qubits
+        circuit.gates = [X, CNOT]
+
+        with pytest.raises(ValueError):
+            simulator.run_circuit_and_measure(circuit, 2)
 
     def test_run_circuitset_and_measure_n_samples(self, backend):
         pytest.xfail()
