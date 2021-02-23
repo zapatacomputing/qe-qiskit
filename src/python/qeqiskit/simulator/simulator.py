@@ -48,6 +48,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             qeqiskit.backend.QiskitSimulator
         """
+        self._check_sampling_validity(device_name, n_samples)
         super().__init__(n_samples=n_samples)
         self.device_name = device_name
         self.noise_model = noise_model
@@ -70,6 +71,13 @@ class QiskitSimulator(QuantumSimulator):
 
         self.optimization_level = optimization_level
         self.get_device(**kwargs)
+
+    def _check_sampling_validity(self, device_name, n_samples):
+        if n_samples is not None:
+            if device_name == "statevector_simulator" and n_samples > 1:
+                raise ValueError(
+                    "Qiskit Aer statevector_simulator does not support sampling with more than 1 sample."
+                )
 
     def get_device(self, noisy=False, **kwargs):
         """Get the ibm device used for executing circuits
@@ -102,6 +110,9 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             A Measurements object containing the observed bitstrings.
         """
+        if n_samples is None:
+            n_samples = self.n_samples
+        self._check_sampling_validity(self.device_name, n_samples)
         super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
 
@@ -112,9 +123,6 @@ class QiskitSimulator(QuantumSimulator):
         coupling_map = None
         if self.device_connectivity is not None:
             coupling_map = CouplingMap(self.device_connectivity.connectivity)
-
-        if n_samples is None:
-            n_samples = self.n_samples
 
         # Run job on device and get counts
         raw_counts = (
