@@ -65,7 +65,7 @@ class QiskitOptimizer(Optimizer):
         ):
             gradient_function = cost_function.gradient
 
-        solution, value, nit = optimizer.optimize(
+        solution, value, _ = optimizer.optimize(
             num_vars=number_of_variables,
             objective_function=cost_function_wrapper,
             initial_point=initial_params,
@@ -78,6 +78,11 @@ class QiskitOptimizer(Optimizer):
         else:
             nfev = cost_function_wrapper.number_of_calls
             history = []
+
+        if self.method == "ADAM" or self.method == "AMSGRAD":
+            nit = optimizer._t
+        else:
+            nit = optimizer._maxiter
 
         return optimization_result(
             opt_value=value,
