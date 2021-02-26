@@ -1,12 +1,10 @@
 import pytest
 import numpy as np
 import os
-from pyquil import Program
-from pyquil.gates import H, CNOT, RX, CZ, X
 from openfermion.ops import QubitOperator
 import qiskit.providers.aer.noise as AerNoise
 
-from zquantum.core.circuit import Circuit
+from zquantum.core.circuit import Circuit, Gate, Circuit, Qubit
 from zquantum.core.interfaces.backend_test import (
     QuantumSimulatorTests,
     QuantumSimulatorGatesTest,
@@ -70,7 +68,13 @@ def noisy_simulator(request):
 class TestQiskitSimulator(QuantumSimulatorTests):
     def test_run_circuitset_and_measure(self, sampling_simulator):
         # Given
-        circuit = Circuit(Program(X(0), CNOT(1, 2)))
+        qubits = [Qubit(i) for i in range(3)]
+        X = Gate("X", qubits=[Qubit(0)])
+        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
+        circuit = Circuit()
+        circuit.qubits = qubits
+        circuit.gates = [X, CNOT]
+
         # When
         sampling_simulator.n_samples = 100
         measurements_set = sampling_simulator.run_circuitset_and_measure([circuit])
@@ -80,8 +84,6 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             assert len(measurements.bitstrings) == 100
             assert all(bitstring == (1, 0, 0) for bitstring in measurements.bitstrings)
 
-        # Given
-        circuit = Circuit(Program(X(0), CNOT(1, 2)))
         # When
         sampling_simulator.n_samples = 100
         measurements_set = sampling_simulator.run_circuitset_and_measure(
@@ -118,9 +120,13 @@ class TestQiskitSimulator(QuantumSimulatorTests):
     def test_expectation_value_with_noisy_simulator(self, noisy_simulator):
         # Given
         # Initialize in |1> state
-        circuit = Circuit(Program(X(0)))
+        X = Gate("X", qubits=[Qubit(0)])
+        circuit = Circuit()
+        circuit.qubits = [Qubit(0)]
+        circuit.gates = [X]
+
         # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-        circuit += Circuit(Program([X(0) for _ in range(10)]))
+        circuit.gates += [X] * 10
         qubit_operator = QubitOperator("Z0")
         noisy_simulator.n_samples = 8192
         # When
@@ -141,9 +147,9 @@ class TestQiskitSimulator(QuantumSimulatorTests):
 
         # Given
         # Initialize in |1> state
-        circuit = Circuit(Program(X(0)))
+        circuit.gates = [X]
         # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-        circuit += Circuit(Program([X(0) for _ in range(50)]))
+        circuit.gates += [X] * 50
         qubit_operator = QubitOperator("Z0")
         noisy_simulator.n_samples = 8192
         # When
@@ -180,9 +186,12 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         )
         qubit_operator = QubitOperator("Z0")
         # Initialize in |1> state
-        circuit = Circuit(Program(X(0)))
+        X = Gate("X", qubits=[Qubit(0)])
+        circuit = Circuit()
+        circuit.qubits = [Qubit(0)]
+        circuit.gates = [X]
         # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-        circuit += Circuit(Program([X(0) for _ in range(50)]))
+        circuit.gates += [X] * 50
 
         # When
         expectation_values_no_compilation = simulator.get_expectation_values(
@@ -199,6 +208,43 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             expectation_values_full_compilation.values[0]
             < expectation_values_no_compilation.values[0]
         )
+
+    def test_simulator_fails_to_initialize_when_using_statevector_simulator_with_more_than_one_sample(
+        self,
+    ):
+        with pytest.raises(ValueError):
+            simulator = QiskitSimulator(
+                "statevector_simulator",
+                n_samples=2,
+            )
+
+    def test_simulator_correctly_initializes_when_using_statevector_simulator_with_one_sample(
+        self,
+    ):
+        simulator = QiskitSimulator(
+            "statevector_simulator",
+            n_samples=1,
+        )
+
+    def test_fails_when_calling_run_circuit_and_measure_on_statevector_simulator_with_n_samples_more_than_one(
+        self,
+    ):
+        simulator = QiskitSimulator(
+            "statevector_simulator",
+        )
+
+        qubits = [Qubit(i) for i in range(3)]
+        X = Gate("X", qubits=[Qubit(0)])
+        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
+        circuit = Circuit()
+        circuit.qubits = qubits
+        circuit.gates = [X, CNOT]
+
+        with pytest.raises(ValueError):
+            simulator.run_circuit_and_measure(circuit, 2)
+
+    def test_run_circuitset_and_measure_n_samples(self, backend):
+        pytest.xfail()
 
 
 class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
