@@ -54,6 +54,14 @@ spec:
                 - T2: "0.000004"
                 - t-step: "0.00000005"
                 - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+        - - name: get-pta-noise-model
+            template: get-pta-noise-model
+            arguments:
+              parameters:
+                - T1: "0.00008"
+                - T2: "0.00010"
+                - t-step: "0.00000005"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
           # Create a random circuit
         - - name: create-random-circuit
             template: create-random-circuit
@@ -104,6 +112,18 @@ spec:
               artifacts:
                 - noise-model:
                     from: "{{steps.get-phase-amplitude-damping-noise-model.outputs.artifacts.noise-model}}"
+                - circuit:
+                    from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
+
+        - - name: run-circuit-and-measure-with-pta-noise-model
+            template: run-circuit-and-measure
+            arguments:
+              parameters:
+                - backend-specs: "{'module_name': 'qeqiskit.simulator', 'function_name': 'QiskitSimulator', 'device_name': 'statevector_simulator'}"
+                - resources: [z-quantum-core, qe-openfermion, qe-qiskit]
+              artifacts:
+                - noise-model:
+                    from: "{{steps.get-pta-noise-model.outputs.artifacts.noise-model}}"
                 - circuit:
                     from: "{{steps.create-random-circuit.outputs.artifacts.circuit}}"
 

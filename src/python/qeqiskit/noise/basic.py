@@ -127,18 +127,11 @@ def create_pta_channel(T_1, T_2, t_step=10e-9):
         qiskit.providers.aer.noise.NoiseModel
     """
 
-    if T_1 == T_2:
-        t_phi = 2 * T_1
-    elif 2 * T_1 == T_2:
-        raise RuntimeError(" T_2 == 2*T_1 only in a pure amplitude damping case ")
-    else:
-        t_phi = T_2 - 2 * T_1
-
     p_x = 0.25 * (1 - pow(np.e, -t_step / T_1))
     p_y = 0.25 * (1 - pow(np.e, -t_step / T_1))
 
     exp_1 = pow(np.e, -t_step / (2 * T_1))
-    exp_2 = pow(np.e, -t_step / t_phi)
+    exp_2 = pow(np.e, -t_step / T_2)
     p_z = 0.5 - p_x - 0.5 * exp_1 * exp_2
     p_i = 1 - p_x - p_y - p_z
     errors = [("X", p_x), ("Y", p_y), ("Z", p_z), ("I", p_i)]
