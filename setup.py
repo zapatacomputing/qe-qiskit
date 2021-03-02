@@ -14,13 +14,9 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/zapatacomputing/qe-qiskit",
-    packages=[
-        "qeqiskit",
-        "qeqiskit.backend",
-        "qeqiskit.noise",
-        "qeqiskit.optimizer",
-        "qeqiskit.simulator",
-    ],
+    packages=setuptools.find_namespace_packages(
+        include=["zquantum.*"], where="src/python"
+    ),
     package_dir={"": "src/python"},
     classifiers=(
         "Programming Language :: Python :: 3",
