@@ -43,5 +43,5 @@ def create_phase_and_amplitude_damping_error(T_1, T_2, **kwargs):
     save_qiskit_noise_model(noise_model, "noise-model.json")
 
 def create_pta_channel(T_1, T_2, **kwargs):
-    noise_model = _create_pta_channel(T_1, T_2, **kwargs)
+    noise_model = _create_pta_channel(float(T_1), float(T_2), **kwargs)
     save_qiskit_noise_model(noise_model, "noise-model.json")
