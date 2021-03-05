@@ -273,7 +273,8 @@ class QiskitBackend(QuantumBackend):
                 self.device,
                 shots=n_samples,
                 optimization_level=self.optimization_level,
-                basis_gates = self.basis_gates,
+                #basis_gates = self.basis_gates,
+                backend_properties = self.device.properties(),
             )
             for n_samples, batch in zip(n_samples_for_batches, batches)
         ]
