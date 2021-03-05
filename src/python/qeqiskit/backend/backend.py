@@ -69,6 +69,7 @@ class QiskitBackend(QuantumBackend):
         self.readout_correction = readout_correction
         self.readout_correction_filter = None
         self.optimization_level = optimization_level
+        self.basis_gates = kwargs.get("basis_gates", None)
 
     def run_circuit_and_measure(
         self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
@@ -268,6 +269,7 @@ class QiskitBackend(QuantumBackend):
                 self.device,
                 shots=n_samples,
                 optimization_level=self.optimization_level,
+                basis_gates = self.basis_gates,
             )
             for n_samples, batch in zip(n_samples_for_batches, batches)
         ]
