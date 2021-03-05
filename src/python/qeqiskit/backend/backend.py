@@ -69,7 +69,11 @@ class QiskitBackend(QuantumBackend):
         self.readout_correction = readout_correction
         self.readout_correction_filter = None
         self.optimization_level = optimization_level
-        self.basis_gates = kwargs.get("basis_gates", None)
+        basis_gates = kwargs.get("basis_gates", None)
+        if basis_gates is None:
+            self.basis_gates = ["id", "rz", "sx", "x", "cx"]
+        else:
+            self.basis_gates = basis_gates
 
     def run_circuit_and_measure(
         self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
