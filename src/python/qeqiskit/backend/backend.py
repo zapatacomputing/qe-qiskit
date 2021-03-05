@@ -125,10 +125,9 @@ class QiskitBackend(QuantumBackend):
             for i in range(multiplicities[-1]):
                 ibmq_circuitset.append(ibmq_circuit.copy(f"{ibmq_circuit.name}_{i}"))
 
-            if math.floor(n_samples_for_circuit / self.max_shots) > 0:
-                n_samples_for_ibmq_circuits.append(
-                    self.max_shots * math.floor(n_samples_for_circuit / self.max_shots)
-                )
+            for i in range(math.floor(n_samples_for_circuit / self.max_shots)):
+                n_samples_for_ibmq_circuits.append(self.max_shots)
+
             if n_samples_for_circuit % self.max_shots != 0:
                 n_samples_for_ibmq_circuits.append(
                     n_samples_for_circuit % self.max_shots
