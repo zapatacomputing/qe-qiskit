@@ -297,13 +297,13 @@ class QiskitBackend(QuantumBackend):
 
         while True:
             try:
-                execute(
+                job = execute(
                     batch,
                     self.device,
                     shots=n_samples,
                     optimization_level=self.optimization_level,
                 )
-                break
+                return job
             except IBMQBackendJobLimitError:
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
                 sleep(self.retry_delay_seconds)
