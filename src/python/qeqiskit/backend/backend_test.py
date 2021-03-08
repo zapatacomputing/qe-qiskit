@@ -128,8 +128,8 @@ class TestQiskitBackend(QuantumBackendTests):
 
     def test_execute_with_retries(self, backend):
         # Given
-        circuit = self.x_cnot_circuit()
-        n_samples = 100
+        circuit = self.x_cnot_circuit().to_qiskit()
+        n_samples = 10
         num_jobs = backend.device.job_limit().maximum_jobs + 1
 
         # When
