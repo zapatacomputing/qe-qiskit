@@ -7,6 +7,7 @@ from qiskit.ignis.mitigation.measurement import (
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.result import Counts
 from qiskit.providers.ibmq.job import IBMQJob
+from qiskit.providers.ibmq.exceptions import IBMQBackendJobLimitError
 from openfermion.ops import IsingOperator
 from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumBackend
@@ -17,33 +18,36 @@ from zquantum.core.measurement import (
 )
 from typing import List, Optional, Tuple
 import math
+from time import sleep
 
 
 class QiskitBackend(QuantumBackend):
     def __init__(
         self,
-        device_name,
-        n_samples=None,
-        hub="ibm-q",
-        group="open",
-        project="main",
-        api_token=None,
-        readout_correction=False,
-        optimization_level=0,
+        device_name: str,
+        n_samples: Optional[int] = None,
+        hub: Optional[str] = "ibm-q",
+        group: Optional[str] = "open",
+        project: Optional[str] = "main",
+        api_token: Optional[str] = None,
+        readout_correction: Optional[bool] = False,
+        optimization_level: Optional[int] = 0,
+        retry_delay_seconds: Optional[int] = 60,
         **kwargs,
     ):
         """Get a qiskit QPU that adheres to the
         zquantum.core.interfaces.backend.QuantumBackend
 
         Args:
-            device_name (string): the name of the device
-            n_samples (int): the number of samples to use when running the device
-            hub (string): IBMQ hub
-            group (string): IBMQ group
-            project (string): IBMQ project
-            api_token (string): IBMQ Api Token
-            readout_correction (bool): indication of whether or not to use basic readout correction
-            optimization_level (int): optimization level for the default qiskit transpiler (0, 1, 2, or 3)
+            device_name: the name of the device
+            n_samples: the number of samples to use when running the device
+            hub: IBMQ hub
+            group: IBMQ group
+            project: IBMQ project
+            api_token: IBMQ Api Token
+            readout_correction: indication of whether or not to use basic readout correction
+            optimization_level: optimization level for the default qiskit transpiler (0, 1, 2, or 3)
+            retry_delay_seconds: Number of seconds to wait to resubmit a job when backend job limit is reached.
 
         Returns:
             qeqiskit.backend.QiskitBackend
@@ -69,6 +73,7 @@ class QiskitBackend(QuantumBackend):
         self.readout_correction = readout_correction
         self.readout_correction_filter = None
         self.optimization_level = optimization_level
+        self.retry_delay_seconds = retry_delay_seconds
 
     def run_circuit_and_measure(
         self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
@@ -98,13 +103,13 @@ class QiskitBackend(QuantumBackend):
             circuitset: The circuits to be executed.
             n_samples: A list of the number of samples to be collected for each
                 circuit. If None, self.n_samples is used for each circuit.
-        
+
         Returns:
             Tuple containing:
             - The expanded list of circuits, converted to qiskit and each
               assigned a unique name.
             - An array indicating how many duplicates there are for each of the
-              original circuits. 
+              original circuits.
         """
         ibmq_circuitset = []
         n_samples_for_ibmq_circuits = []
@@ -135,7 +140,9 @@ class QiskitBackend(QuantumBackend):
         return ibmq_circuitset, n_samples_for_ibmq_circuits, multiplicities
 
     def batch_experiments(
-        self, experiments: List[QuantumCircuit], n_samples_for_ibmq_circuits: List[int],
+        self,
+        experiments: List[QuantumCircuit],
+        n_samples_for_ibmq_circuits: List[int],
     ) -> Tuple[List[List[QuantumCircuit]], List[int]]:
         """Batch a set of experiments (circuits to be executed) into groups
         whose size is no greater than the maximum allowed by the backend.
@@ -175,7 +182,10 @@ class QiskitBackend(QuantumBackend):
                         n_samples_for_ibmq_circuits[i]
                         for i in range(
                             len(batches) * self.batch_size - self.batch_size,
-                            min(len(batches) * self.batch_size, len(experiments),),
+                            min(
+                                len(batches) * self.batch_size,
+                                len(experiments),
+                            ),
                         )
                     ]
                 )
@@ -200,11 +210,11 @@ class QiskitBackend(QuantumBackend):
             multiplicities: The number of copies of each of the original
                 circuits.
             kwargs: Passed to self.apply_readout_correction.
-        
+
         Returns:
             A list of list of measurements, where each list of measurements
             corresponds to one of the circuits of the original (unexpanded)
-            circuit set. 
+            circuit set.
         """
         ibmq_circuit_counts_set = []
         for job, batch in zip(jobs, batches):
@@ -246,7 +256,7 @@ class QiskitBackend(QuantumBackend):
         Args:
             circuitset: the circuits to run
             n_samples: The number of shots to perform on each circuit. If
-                None, then self.n_samples shots are performed for each circuit. 
+                None, then self.n_samples shots are performed for each circuit.
 
         Returns:
             A list of Measurements objects containing the observed bitstrings.
@@ -262,12 +272,7 @@ class QiskitBackend(QuantumBackend):
         )
 
         jobs = [
-            execute(
-                batch,
-                self.device,
-                shots=n_samples,
-                optimization_level=self.optimization_level,
-            )
+            self.execute_with_retries(batch, n_samples)
             for n_samples, batch in zip(n_samples_for_batches, batches)
         ]
 
@@ -275,6 +280,33 @@ class QiskitBackend(QuantumBackend):
         self.number_of_jobs_run += len(batches)
 
         return self.aggregregate_measurements(jobs, batches, multiplicities)
+
+    def execute_with_retries(
+        self, batch: List[QuantumCircuit], n_samples: int
+    ) -> IBMQJob:
+        """Execute a job, resubmitting if the the backend job limit has been
+        reached.
+
+        Args:
+            batch: The batch of qiskit ircuits to be executed.
+            n_samples: The number of shots to perform on each circuit.
+
+        Returns:
+            The qiskit representation of the submitted job.
+        """
+
+        while True:
+            try:
+                execute(
+                    batch,
+                    self.device,
+                    shots=n_samples,
+                    optimization_level=self.optimization_level,
+                )
+                break
+            except IBMQBackendJobLimitError:
+                print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
+                sleep(self.retry_delay_seconds)
 
     def apply_readout_correction(self, counts, qubit_list=None, **kwargs):
         if self.readout_correction_filter is None:
