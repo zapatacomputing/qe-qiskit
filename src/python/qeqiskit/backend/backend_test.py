@@ -77,15 +77,35 @@ class TestQiskitBackend(QuantumBackendTests):
             [circuit.copy("circuit3"), circuit.copy("circuit4")],
         ]
         multiplicities = [3, 1]
-        jobs = [execute(batch, backend.device, shots=10,) for batch in batches]
+        jobs = [
+            backend.execute_with_retries(
+                batch,
+                10,
+            )
+            for batch in batches
+        ]
 
         circuit = self.x_cnot_circuit()
         measurements_set = backend.aggregregate_measurements(
-            jobs, batches, multiplicities,
+            jobs,
+            batches,
+            multiplicities,
         )
 
-        assert measurements_set[0].bitstrings == [(1, 0, 0),] * 30
-        assert measurements_set[1].bitstrings == [(1, 0, 0),] * 10
+        assert (
+            measurements_set[0].bitstrings
+            == [
+                (1, 0, 0),
+            ]
+            * 30
+        )
+        assert (
+            measurements_set[1].bitstrings
+            == [
+                (1, 0, 0),
+            ]
+            * 10
+        )
         assert len(measurements_set) == 2
 
     def test_run_circuitset_and_measure(self, backend):
@@ -105,6 +125,49 @@ class TestQiskitBackend(QuantumBackendTests):
             #   the one we expect)
             counts = measurements.get_counts()
             assert max(counts, key=counts.get) == "100"
+
+    def test_execute_with_retries(self, backend):
+        # This test has a race condition where the IBMQ server might finish
+        # executing the first job before the last one is submitted. The test
+        # will still pass in the case, but will not actually perform a retry.
+        # We can address in the future by using a mock provider.
+
+        # Given
+        circuit = self.x_cnot_circuit().to_qiskit()
+        n_samples = 10
+        num_jobs = backend.device.job_limit().maximum_jobs + 1
+
+        # When
+        jobs = [
+            backend.execute_with_retries([circuit], n_samples) for _ in range(num_jobs)
+        ]
+
+        # Then
+
+        # The correct number of jobs were submitted
+        assert len(jobs) == num_jobs
+
+        # Each job has a unique ID
+        assert len(set([job.job_id() for job in jobs])) == num_jobs
+
+    @pytest.mark.xfail
+    def test_execute_with_retries_timeout(self, backend):
+        # This test has a race condition where the IBMQ server might finish
+        # executing the first job before the last one is submitted, causing the
+        # test to fail. We can address this in the future using a mock provider.
+        
+        # Given
+        circuit = self.x_cnot_circuit().to_qiskit()
+        n_samples = 10
+        backend.retry_timeout_seconds = 0
+        num_jobs = backend.device.job_limit().maximum_jobs + 1
+
+        # Then
+        with pytest.raises(RuntimeError):
+
+            # When
+            for _ in range(num_jobs):
+                backend.execute_with_retries([circuit], n_samples)
 
     def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
         # Given
