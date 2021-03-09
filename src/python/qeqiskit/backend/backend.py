@@ -75,11 +75,9 @@ class QiskitBackend(QuantumBackend):
         self.readout_correction = readout_correction
         self.readout_correction_filter = None
         self.optimization_level = optimization_level
-        basis_gates = kwargs.get("basis_gates", None)
-        if basis_gates is None:
-            self.basis_gates = ["id", "rz", "sx", "x", "cx"]
-        else:
-            self.basis_gates = basis_gates
+        self.basis_gates = kwargs.get(
+            "basis_gates", self.device.configuration().basis_gates
+        )
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
 
@@ -315,7 +313,9 @@ class QiskitBackend(QuantumBackend):
                     batch,
                     self.device,
                     shots=n_samples,
+                    basis_gates=self.basis_gates,
                     optimization_level=self.optimization_level,
+                    backend_properties=self.device.properties(),
                 )
                 return job
             except IBMQBackendJobLimitError:
