@@ -18,7 +18,7 @@ from zquantum.core.measurement import (
 )
 from typing import List, Optional, Tuple
 import math
-from time import sleep
+import time
 
 
 class QiskitBackend(QuantumBackend):
@@ -33,6 +33,7 @@ class QiskitBackend(QuantumBackend):
         readout_correction: Optional[bool] = False,
         optimization_level: Optional[int] = 0,
         retry_delay_seconds: Optional[int] = 60,
+        retry_timeout_seconds: Optional[int] = 86400,
         **kwargs,
     ):
         """Get a qiskit QPU that adheres to the
@@ -48,6 +49,7 @@ class QiskitBackend(QuantumBackend):
             readout_correction: indication of whether or not to use basic readout correction
             optimization_level: optimization level for the default qiskit transpiler (0, 1, 2, or 3)
             retry_delay_seconds: Number of seconds to wait to resubmit a job when backend job limit is reached.
+            retry_timeout_seconds: Number of seconds to wait
 
         Returns:
             qeqiskit.backend.QiskitBackend
@@ -74,6 +76,7 @@ class QiskitBackend(QuantumBackend):
         self.readout_correction_filter = None
         self.optimization_level = optimization_level
         self.retry_delay_seconds = retry_delay_seconds
+        self.retry_timeout_seconds = retry_timeout_seconds
 
     def run_circuit_and_measure(
         self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
@@ -287,6 +290,11 @@ class QiskitBackend(QuantumBackend):
         """Execute a job, resubmitting if the the backend job limit has been
         reached.
 
+        The number of seconds between retries is specified by
+        self.retry_delay_seconds. If self.retry_timeout_seconds is defined, then
+        an exception will be raised if the submission does not succeed in the
+        specified number of seconds.
+
         Args:
             batch: The batch of qiskit ircuits to be executed.
             n_samples: The number of shots to perform on each circuit.
@@ -295,6 +303,7 @@ class QiskitBackend(QuantumBackend):
             The qiskit representation of the submitted job.
         """
 
+        start_time = time.time()
         while True:
             try:
                 job = execute(
@@ -305,8 +314,14 @@ class QiskitBackend(QuantumBackend):
                 )
                 return job
             except IBMQBackendJobLimitError:
+                if self.retry_timeout_seconds is not None:
+                    elapsed_time_seconds = time.time() - start_time
+                    if elapsed_time_seconds > self.retry_timeout_seconds:
+                        raise RuntimeError(
+                            f"Failed to submit job in {elapsed_time_seconds}s due to backend job limit."
+                        )
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
-                sleep(self.retry_delay_seconds)
+                time.sleep(self.retry_delay_seconds)
 
     def apply_readout_correction(self, counts, qubit_list=None, **kwargs):
         if self.readout_correction_filter is None:
