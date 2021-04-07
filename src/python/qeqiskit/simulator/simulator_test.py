@@ -243,9 +243,6 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         with pytest.raises(ValueError):
             simulator.run_circuit_and_measure(circuit, 2)
 
-    def test_run_circuitset_and_measure_n_samples(self, backend):
-        pytest.xfail()
-
 
 class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
     pass
