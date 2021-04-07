@@ -16,7 +16,7 @@ from zquantum.core.circuit import Circuit
 
 
 class QiskitSimulator(QuantumSimulator):
-    supports_batching = True
+    supports_batching = False
     batch_size = sys.maxsize
 
     def __init__(
@@ -145,62 +145,6 @@ class QiskitSimulator(QuantumSimulator):
             reversed_counts[bitstring[::-1]] = raw_counts[bitstring]
 
         return Measurements.from_counts(reversed_counts)
-
-    def run_circuitset_and_measure(
-        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None, **kwargs
-    ) -> List[Measurements]:
-        """Run a set of circuits and measure a certain number of bitstrings.
-        Note: the number of bitstrings measured is derived from self.n_samples
-
-        Args:
-            circuit: the circuit to prepare the state
-            n_samples: The number of samples to collect for each circuit. If
-                None, the number of samples for each circuit is given by the
-                n_samples attribute.
-        Returns:
-            A list of Measurements objects containing the observed bitstrings.
-        """
-        if n_samples is not None:
-            raise ValueError("Qiskit Aer integration does not yet support n_samples.")
-
-        super().run_circuitset_and_measure(circuitset)
-        ibmq_circuitset = []
-        for circuit in circuitset:
-            num_qubits = len(circuit.qubits)
-
-            ibmq_circuit = circuit.to_qiskit()
-            ibmq_circuit.barrier(range(num_qubits))
-            ibmq_circuit.measure(range(num_qubits), range(num_qubits))
-
-            ibmq_circuitset.append(ibmq_circuit)
-
-        coupling_map = None
-        if self.device_connectivity is not None:
-            coupling_map = CouplingMap(self.device_connectivity.connectivity)
-
-        # Run job on device and get counts
-        job = execute(
-            ibmq_circuitset,
-            self.device,
-            shots=self.n_samples,
-            noise_model=self.noise_model,
-            coupling_map=coupling_map,
-            basis_gates=self.basis_gates,
-            optimization_level=self.optimization_level,
-        )
-        measurements_set = []
-        for i, ibmq_circuit in enumerate(ibmq_circuitset):
-            circuit_counts = job.result().get_counts(ibmq_circuit)
-
-            # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
-            reversed_counts = {}
-            for bitstring in circuit_counts.keys():
-                reversed_counts[bitstring[::-1]] = circuit_counts[bitstring]
-
-            measurements = Measurements.from_counts(reversed_counts)
-            measurements_set.append(measurements)
-
-        return measurements_set
 
     def get_wavefunction(self, circuit):
         """Run a circuit and get the wavefunction of the resulting statevector.
