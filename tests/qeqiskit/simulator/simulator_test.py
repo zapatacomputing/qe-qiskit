@@ -10,8 +10,8 @@ from zquantum.core.interfaces.backend_test import (
     QuantumSimulatorGatesTest,
 )
 from zquantum.core.measurement import ExpectationValues
-from ..simulator import QiskitSimulator
-from ..noise import get_qiskit_noise_model
+from qeqiskit.simulator import QiskitSimulator
+from qeqiskit.noise import get_qiskit_noise_model
 
 
 @pytest.fixture(
