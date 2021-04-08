@@ -6,7 +6,7 @@ from qiskit import execute
 
 from zquantum.core.circuit import Circuit, Gate, Circuit, Qubit
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
-from .backend import QiskitBackend
+from qeqiskit.backend import QiskitBackend
 
 import math
 

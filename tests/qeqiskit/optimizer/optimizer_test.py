@@ -1,6 +1,6 @@
 import unittest
 from zquantum.core.history.recorder import recorder
-from .optimizer import QiskitOptimizer
+from qeqiskit.optimizer import QiskitOptimizer
 from zquantum.core.interfaces.optimizer_test import OptimizerTests
 from zquantum.core.interfaces.optimizer_test import sum_x_squared
 import numpy as np
