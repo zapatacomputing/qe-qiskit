@@ -116,7 +116,8 @@ class QiskitSimulator(QuantumSimulator):
         super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
 
-        ibmq_circuit = circuit.to_qiskit()
+        # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
+        ibmq_circuit = circuit.to_qiskit().reverse_bits()
         ibmq_circuit.barrier(range(num_qubits))
         ibmq_circuit.measure(range(num_qubits), range(num_qubits))
 
@@ -139,12 +140,7 @@ class QiskitSimulator(QuantumSimulator):
             .get_counts()
         )
 
-        # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
-        reversed_counts = {}
-        for bitstring in raw_counts.keys():
-            reversed_counts[bitstring[::-1]] = raw_counts[bitstring]
-
-        return Measurements.from_counts(reversed_counts)
+        return Measurements.from_counts(raw_counts)
 
     def get_wavefunction(self, circuit):
         """Run a circuit and get the wavefunction of the resulting statevector.
@@ -155,7 +151,8 @@ class QiskitSimulator(QuantumSimulator):
             pyquil.wavefunction.Wavefunction
         """
         super().get_wavefunction(circuit)
-        ibmq_circuit = circuit.to_qiskit()
+        # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
+        ibmq_circuit = circuit.to_qiskit().reverse_bits()
 
         coupling_map = None
         if self.device_connectivity is not None:

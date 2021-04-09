@@ -126,8 +126,8 @@ class QiskitBackend(QuantumBackend):
 
         for n_samples_for_circuit, circuit in zip(n_samples, circuitset):
             num_qubits = len(circuit.qubits)
-
-            ibmq_circuit = circuit.to_qiskit()
+            # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
+            ibmq_circuit = circuit.to_qiskit().reverse_bits()
             ibmq_circuit.barrier(range(num_qubits))
             ibmq_circuit.measure(range(num_qubits), range(num_qubits))
 
@@ -243,12 +243,7 @@ class QiskitBackend(QuantumBackend):
             if self.readout_correction:
                 combined_counts = self.apply_readout_correction(combined_counts, kwargs)
 
-            # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
-            reversed_counts = {}
-            for bitstring in combined_counts.keys():
-                reversed_counts[bitstring[::-1]] = int(combined_counts[bitstring])
-
-            measurements = Measurements.from_counts(reversed_counts)
+            measurements = Measurements.from_counts(combined_counts)
             measurements_set.append(measurements)
 
         return measurements_set
