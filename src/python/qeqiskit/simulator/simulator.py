@@ -13,6 +13,7 @@ from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements
 from zquantum.core.circuit import Circuit
+from collections import Counter
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -48,7 +49,6 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             qeqiskit.backend.QiskitSimulator
         """
-        self._check_sampling_validity(device_name, n_samples)
         super().__init__(n_samples=n_samples)
         self.device_name = device_name
         self.noise_model = noise_model
@@ -71,13 +71,6 @@ class QiskitSimulator(QuantumSimulator):
 
         self.optimization_level = optimization_level
         self.get_device(**kwargs)
-
-    def _check_sampling_validity(self, device_name, n_samples):
-        if n_samples is not None:
-            if device_name == "statevector_simulator" and n_samples > 1:
-                raise ValueError(
-                    "Qiskit Aer statevector_simulator does not support sampling with more than 1 sample."
-                )
 
     def get_device(self, noisy=False, **kwargs):
         """Get the ibm device used for executing circuits
@@ -112,7 +105,6 @@ class QiskitSimulator(QuantumSimulator):
         """
         if n_samples is None:
             n_samples = self.n_samples
-        self._check_sampling_validity(self.device_name, n_samples)
         super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
 
@@ -124,20 +116,34 @@ class QiskitSimulator(QuantumSimulator):
         if self.device_connectivity is not None:
             coupling_map = CouplingMap(self.device_connectivity.connectivity)
 
-        # Run job on device and get counts
-        raw_counts = (
-            execute(
-                ibmq_circuit,
-                self.device,
-                shots=n_samples,
-                noise_model=self.noise_model,
-                coupling_map=coupling_map,
-                basis_gates=self.basis_gates,
-                optimization_level=self.optimization_level,
+        if self.device_name == "statevector_simulator":
+            if n_samples is None:
+                n_samples = 1024
+            wavefunction = self.get_wavefunction(circuit)
+            prob_dictionary = wavefunction.get_outcome_probs()
+
+            samples = np.random.choice(
+                list(prob_dictionary.keys()),
+                size=n_samples,
+                p=list(prob_dictionary.values()),
             )
-            .result()
-            .get_counts()
-        )
+            raw_counts = dict(Counter(samples))
+
+        else:
+            # Run job on device and get counts
+            raw_counts = (
+                execute(
+                    ibmq_circuit,
+                    self.device,
+                    shots=n_samples,
+                    noise_model=self.noise_model,
+                    coupling_map=coupling_map,
+                    basis_gates=self.basis_gates,
+                    optimization_level=self.optimization_level,
+                )
+                .result()
+                .get_counts()
+            )
 
         # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
         reversed_counts = {}
