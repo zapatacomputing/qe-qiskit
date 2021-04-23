@@ -1,17 +1,15 @@
 import numpy as np
 import sys
-from typing import Optional, List
+from typing import Optional
 
 from qiskit import Aer, execute
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
 from pyquil.wavefunction import Wavefunction
-from openfermion.ops import IsingOperator
 
-from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumSimulator
-from zquantum.core.measurement import Measurements
+from zquantum.core.measurement import Measurements, sample_from_wavefunction
 from zquantum.core.circuit import Circuit
 from collections import Counter
 
@@ -104,7 +102,12 @@ class QiskitSimulator(QuantumSimulator):
             A Measurements object containing the observed bitstrings.
         """
         if n_samples is None:
+            if self.n_samples is None or self.n_samples <= 0:
+                raise ValueError(
+                    "Either n_samples or self.n_samples must be a positive integer when sampling"
+                )
             n_samples = self.n_samples
+
         super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
 
@@ -117,18 +120,8 @@ class QiskitSimulator(QuantumSimulator):
             coupling_map = CouplingMap(self.device_connectivity.connectivity)
 
         if self.device_name == "statevector_simulator":
-            if n_samples is None:
-                n_samples = 1024
             wavefunction = self.get_wavefunction(circuit)
-            prob_dictionary = wavefunction.get_outcome_probs()
-
-            samples = np.random.choice(
-                list(prob_dictionary.keys()),
-                size=n_samples,
-                p=list(prob_dictionary.values()),
-            )
-            raw_counts = dict(Counter(samples))
-
+            return Measurements(sample_from_wavefunction(wavefunction, n_samples))
         else:
             # Run job on device and get counts
             raw_counts = (
