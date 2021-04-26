@@ -8,12 +8,9 @@ from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.result import Counts
 from qiskit.providers.ibmq.job import IBMQJob
 from qiskit.providers.ibmq.exceptions import IBMQBackendJobLimitError
-from openfermion.ops import IsingOperator
-from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.circuit import Circuit
 from zquantum.core.measurement import (
-    expectation_values_to_real,
     Measurements,
 )
 from typing import List, Optional, Tuple
