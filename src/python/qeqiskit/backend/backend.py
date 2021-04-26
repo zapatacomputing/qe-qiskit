@@ -135,13 +135,11 @@ class QiskitBackend(QuantumBackend):
             n_samples = (self.n_samples,) * len(circuitset)
 
         for n_samples_for_circuit, circuit in zip(n_samples, circuitset):
-            # num_qubits = len(circuit.qubits)
-
             ibmq_circuit = export_to_qiskit(circuit)
-            # TODO: replace ranges with lists because Qiskit's docs require tuple or list
-            ibmq_circuit.barrier(range(circuit.n_qubits))
+            full_qubit_indices = list(range(circuit.n_qubits))
+            ibmq_circuit.barrier(full_qubit_indices)
             ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
-            ibmq_circuit.measure(range(circuit.n_qubits), range(circuit.n_qubits))
+            ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
 
             multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
 
