@@ -1,4 +1,4 @@
-from qiskit import execute, QuantumRegister, QuantumCircuit
+from qiskit import execute, QuantumRegister, QuantumCircuit, ClassicalRegister
 from qiskit.providers.ibmq import IBMQ
 from qiskit.ignis.mitigation.measurement import (
     complete_meas_cal,
@@ -9,11 +9,17 @@ from qiskit.result import Counts
 from qiskit.providers.ibmq.job import IBMQJob
 from qiskit.providers.ibmq.exceptions import IBMQBackendJobLimitError
 from zquantum.core.interfaces.backend import QuantumBackend
-from zquantum.core.circuit import Circuit
+from zquantum.core.circuit import Circuit as OldCircuit
 from zquantum.core.measurement import (
     Measurements,
 )
 from typing import List, Optional, Tuple
+from zquantum.core.wip.circuits import (
+    new_circuit_from_old_circuit,
+    Circuit as NewCircuit,
+    export_to_qiskit,
+)
+from zquantum.core.wip.compatibility_tools import compatible_with_old_type
 import math
 import time
 
@@ -77,8 +83,11 @@ class QiskitBackend(QuantumBackend):
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
 
+    @compatible_with_old_type(
+        old_type=OldCircuit, translate_old_to_wip=new_circuit_from_old_circuit
+    )
     def run_circuit_and_measure(
-        self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
+        self, circuit: NewCircuit, n_samples: Optional[int] = None, **kwargs
     ) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
@@ -95,8 +104,13 @@ class QiskitBackend(QuantumBackend):
             [circuit], [n_samples] if n_samples is not None else None, **kwargs
         )[0]
 
+    @compatible_with_old_type(
+        old_type=OldCircuit,
+        translate_old_to_wip=new_circuit_from_old_circuit,
+        consider_iterable_types=[list, tuple],
+    )
     def transform_circuitset_to_ibmq_experiments(
-        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None
+        self, circuitset: List[NewCircuit], n_samples: Optional[List[int]] = None
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
         count exceeds the maximum allowed by the backend.
@@ -121,11 +135,13 @@ class QiskitBackend(QuantumBackend):
             n_samples = (self.n_samples,) * len(circuitset)
 
         for n_samples_for_circuit, circuit in zip(n_samples, circuitset):
-            num_qubits = len(circuit.qubits)
+            # num_qubits = len(circuit.qubits)
 
-            ibmq_circuit = circuit.to_qiskit()
-            ibmq_circuit.barrier(range(num_qubits))
-            ibmq_circuit.measure(range(num_qubits), range(num_qubits))
+            ibmq_circuit = export_to_qiskit(circuit)
+            # TODO: replace ranges with lists because Qiskit's docs require tuple or list
+            ibmq_circuit.barrier(range(circuit.n_qubits))
+            ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
+            ibmq_circuit.measure(range(circuit.n_qubits), range(circuit.n_qubits))
 
             multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
 
@@ -250,8 +266,16 @@ class QiskitBackend(QuantumBackend):
 
         return measurements_set
 
+    @compatible_with_old_type(
+        old_type=OldCircuit,
+        translate_old_to_wip=new_circuit_from_old_circuit,
+        consider_iterable_types=[list],
+    )
     def run_circuitset_and_measure(
-        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None, **kwargs
+        self,
+        circuitset: List[NewCircuit],
+        n_samples: Optional[List[int]] = None,
+        **kwargs,
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
