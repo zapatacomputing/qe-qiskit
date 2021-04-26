@@ -1,4 +1,4 @@
-from qiskit import execute, QuantumRegister, QuantumCircuit
+from qiskit import execute, QuantumRegister, QuantumCircuit, ClassicalRegister
 from qiskit.providers.ibmq import IBMQ
 from qiskit.ignis.mitigation.measurement import (
     complete_meas_cal,
@@ -8,15 +8,18 @@ from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.result import Counts
 from qiskit.providers.ibmq.job import IBMQJob
 from qiskit.providers.ibmq.exceptions import IBMQBackendJobLimitError
-from openfermion.ops import IsingOperator
-from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumBackend
-from zquantum.core.circuit import Circuit
+from zquantum.core.circuit import Circuit as OldCircuit
 from zquantum.core.measurement import (
-    expectation_values_to_real,
     Measurements,
 )
 from typing import List, Optional, Tuple
+from zquantum.core.wip.circuits import (
+    new_circuit_from_old_circuit,
+    Circuit as NewCircuit,
+    export_to_qiskit,
+)
+from zquantum.core.wip.compatibility_tools import compatible_with_old_type
 import math
 import time
 
@@ -46,13 +49,12 @@ class QiskitBackend(QuantumBackend):
             group: IBMQ group
             project: IBMQ project
             api_token: IBMQ Api Token
-            readout_correction: indication of whether or not to use basic readout correction
-            optimization_level: optimization level for the default qiskit transpiler (0, 1, 2, or 3)
-            retry_delay_seconds: Number of seconds to wait to resubmit a job when backend job limit is reached.
+            readout_correction: flag of whether or not to use basic readout correction
+            optimization_level: optimization level for the default qiskit transpiler (0,
+                1, 2, or 3).
+            retry_delay_seconds: Number of seconds to wait to resubmit a job when backend
+                job limit is reached.
             retry_timeout_seconds: Number of seconds to wait
-
-        Returns:
-            qeqiskit.backend.QiskitBackend
         """
         super().__init__(n_samples=n_samples)
         self.device_name = device_name
@@ -61,9 +63,9 @@ class QiskitBackend(QuantumBackend):
             try:
                 IBMQ.enable_account(api_token)
             except IBMQAccountError as e:
-                if (
-                    e.message
-                    != "An IBM Quantum Experience account is already in use for the session."
+                if e.message != (
+                    "An IBM Quantum Experience account is already in use "
+                    "for the session."
                 ):
                     raise RuntimeError(e)
 
@@ -81,8 +83,11 @@ class QiskitBackend(QuantumBackend):
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
 
+    @compatible_with_old_type(
+        old_type=OldCircuit, translate_old_to_wip=new_circuit_from_old_circuit
+    )
     def run_circuit_and_measure(
-        self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
+        self, circuit: NewCircuit, n_samples: Optional[int] = None, **kwargs
     ) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
@@ -99,8 +104,13 @@ class QiskitBackend(QuantumBackend):
             [circuit], [n_samples] if n_samples is not None else None, **kwargs
         )[0]
 
+    @compatible_with_old_type(
+        old_type=OldCircuit,
+        translate_old_to_wip=new_circuit_from_old_circuit,
+        consider_iterable_types=[list, tuple],
+    )
     def transform_circuitset_to_ibmq_experiments(
-        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None
+        self, circuitset: List[NewCircuit], n_samples: Optional[List[int]] = None
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
         count exceeds the maximum allowed by the backend.
@@ -125,11 +135,11 @@ class QiskitBackend(QuantumBackend):
             n_samples = (self.n_samples,) * len(circuitset)
 
         for n_samples_for_circuit, circuit in zip(n_samples, circuitset):
-            num_qubits = len(circuit.qubits)
-
-            ibmq_circuit = circuit.to_qiskit()
-            ibmq_circuit.barrier(range(num_qubits))
-            ibmq_circuit.measure(range(num_qubits), range(num_qubits))
+            ibmq_circuit = export_to_qiskit(circuit)
+            full_qubit_indices = list(range(circuit.n_qubits))
+            ibmq_circuit.barrier(full_qubit_indices)
+            ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
+            ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
 
             multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
 
@@ -243,7 +253,8 @@ class QiskitBackend(QuantumBackend):
             if self.readout_correction:
                 combined_counts = self.apply_readout_correction(combined_counts, kwargs)
 
-            # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
+            # qiskit counts object maps bitstrings in reversed order to ints, so we must
+            # flip the bitstrings
             reversed_counts = {}
             for bitstring in combined_counts.keys():
                 reversed_counts[bitstring[::-1]] = int(combined_counts[bitstring])
@@ -253,8 +264,16 @@ class QiskitBackend(QuantumBackend):
 
         return measurements_set
 
+    @compatible_with_old_type(
+        old_type=OldCircuit,
+        translate_old_to_wip=new_circuit_from_old_circuit,
+        consider_iterable_types=[list],
+    )
     def run_circuitset_and_measure(
-        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None, **kwargs
+        self,
+        circuitset: List[NewCircuit],
+        n_samples: Optional[List[int]] = None,
+        **kwargs,
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
@@ -323,7 +342,8 @@ class QiskitBackend(QuantumBackend):
                     elapsed_time_seconds = time.time() - start_time
                     if elapsed_time_seconds > self.retry_timeout_seconds:
                         raise RuntimeError(
-                            f"Failed to submit job in {elapsed_time_seconds}s due to backend job limit."
+                            f"Failed to submit job in {elapsed_time_seconds}s due to "
+                            "backend job limit."
                         )
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
                 time.sleep(self.retry_delay_seconds)
