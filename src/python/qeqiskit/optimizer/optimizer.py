@@ -1,6 +1,6 @@
 from zquantum.core.history.recorder import recorder
 from zquantum.core.interfaces.optimizer import Optimizer, optimization_result
-from qiskit.aqua.components.optimizers import SPSA, ADAM
+from qiskit.algorithms.optimizers import SPSA, ADAM
 from scipy.optimize import OptimizeResult
 
 
