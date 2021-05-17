@@ -82,7 +82,7 @@ class QiskitOptimizer(Optimizer):
         if self.method == "ADAM" or self.method == "AMSGRAD":
             nit = optimizer._t
         else:
-            nit = optimizer._maxiter
+            nit = optimizer.maxiter
 
         return optimization_result(
             opt_value=value,
