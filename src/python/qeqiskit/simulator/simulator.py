@@ -1,18 +1,17 @@
 import numpy as np
 import sys
-from typing import Optional, List
+from typing import Optional
 
 from qiskit import Aer, execute
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
 from pyquil.wavefunction import Wavefunction
-from openfermion.ops import IsingOperator
 
-from zquantum.core.openfermion import change_operator_type
 from zquantum.core.interfaces.backend import QuantumSimulator
-from zquantum.core.measurement import Measurements
+from zquantum.core.measurement import Measurements, sample_from_wavefunction
 from zquantum.core.circuit import Circuit
+from collections import Counter
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -49,7 +48,6 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             qeqiskit.backend.QiskitSimulator
         """
-        self._check_sampling_validity(device_name, n_samples)
         super().__init__(n_samples=n_samples)
         self.device_name = device_name
         self.noise_model = noise_model
@@ -73,13 +71,6 @@ class QiskitSimulator(QuantumSimulator):
 
         self.optimization_level = optimization_level
         self.get_device(**kwargs)
-
-    def _check_sampling_validity(self, device_name, n_samples):
-        if n_samples is not None:
-            if device_name == "statevector_simulator" and n_samples > 1:
-                raise ValueError(
-                    "Qiskit Aer statevector_simulator does not support sampling with more than 1 sample."
-                )
 
     def get_device(self, noisy=False, **kwargs):
         """Get the ibm device used for executing circuits
@@ -113,8 +104,12 @@ class QiskitSimulator(QuantumSimulator):
             A Measurements object containing the observed bitstrings.
         """
         if n_samples is None:
+            if self.n_samples is None or self.n_samples <= 0:
+                raise ValueError(
+                    "Either n_samples or self.n_samples must be a positive integer when sampling"
+                )
             n_samples = self.n_samples
-        self._check_sampling_validity(self.device_name, n_samples)
+
         super().run_circuit_and_measure(circuit)
         num_qubits = len(circuit.qubits)
 
@@ -126,22 +121,26 @@ class QiskitSimulator(QuantumSimulator):
         if self.device_connectivity is not None:
             coupling_map = CouplingMap(self.device_connectivity.connectivity)
 
-        # Run job on device and get counts
-        raw_counts = (
-            execute(
-                ibmq_circuit,
-                self.device,
-                shots=n_samples,
-                noise_model=self.noise_model,
-                coupling_map=coupling_map,
-                basis_gates=self.basis_gates,
-                optimization_level=self.optimization_level,
-                seed_simulator=self.seed,
-                seed_transpiler=self.seed,
+        if self.device_name == "statevector_simulator":
+            wavefunction = self.get_wavefunction(circuit)
+            return Measurements(sample_from_wavefunction(wavefunction, n_samples))
+        else:
+            # Run job on device and get counts
+            raw_counts = (
+                execute(
+                    ibmq_circuit,
+                    self.device,
+                    shots=n_samples,
+                    noise_model=self.noise_model,
+                    coupling_map=coupling_map,
+                    basis_gates=self.basis_gates,
+                    optimization_level=self.optimization_level,
+                    seed_simulator=self.seed,
+                    seed_transpiler=self.seed,
+                )
+                .result()
+                .get_counts()
             )
-            .result()
-            .get_counts()
-        )
 
         # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
         reversed_counts = {}
@@ -172,6 +171,8 @@ class QiskitSimulator(QuantumSimulator):
             noise_model=self.noise_model,
             coupling_map=coupling_map,
             basis_gates=self.basis_gates,
+            seed_simulator=self.seed,
+            seed_transpiler=self.seed,
         )
         wavefunction = job.result().get_statevector(ibmq_circuit, decimals=20)
         return Wavefunction(wavefunction)
