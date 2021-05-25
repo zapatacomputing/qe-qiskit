@@ -14,10 +14,8 @@ import pytest
             "method": "SPSA",
             "options": {
                 "maxiter": int(1e5),
-                "c0": 1e-3,
-                "c1": 1e-4,
-                "c2": 1e-3,
-                "c3": 1e-4,
+                "learning_rate": 1e-3,
+                "perturbation": 1e-5,
             },
         },
         {"method": "AMSGRAD", "options": {"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4}},
@@ -52,8 +50,20 @@ class TestQiskitOptimizerTests(OptimizerTests):
         cost_function = recorder(sum_x_squared)
 
         result = optimizer.minimize(cost_function, np.array([-1, 1]))
-
-        assert result.history == cost_function.history
+        assert len(result.history) == len(cost_function.history)
+        assert all(
+            res.call_number == cost.call_number
+            for res, cost in zip(result.history, cost_function.history)
+        )
+        assert all(
+            res.value == cost.value
+            for res, cost in zip(result.history, cost_function.history)
+        )
+        assert all(
+            res_params == cost_params
+            for res, cost in zip(result.history, cost_function.history)
+            for res_params, cost_params in zip(res.params, cost.params)
+        )
 
     def test_optimizier_does_not_record_history_if_keep_value_history_is_set_to_false(
         self, optimizer

@@ -27,6 +27,7 @@ class QiskitSimulator(QuantumSimulator):
         basis_gates=None,
         api_token=None,
         optimization_level=0,
+        seed=None,
         **kwargs,
     ):
         """Get a qiskit device (simulator or QPU) that adheres to the
@@ -51,6 +52,7 @@ class QiskitSimulator(QuantumSimulator):
         self.device_name = device_name
         self.noise_model = noise_model
         self.device_connectivity = device_connectivity
+        self.seed = seed
 
         if basis_gates is None and self.noise_model is not None:
             self.basis_gates = self.noise_model.basis_gates
@@ -133,6 +135,8 @@ class QiskitSimulator(QuantumSimulator):
                     coupling_map=coupling_map,
                     basis_gates=self.basis_gates,
                     optimization_level=self.optimization_level,
+                    seed_simulator=self.seed,
+                    seed_transpiler=self.seed,
                 )
                 .result()
                 .get_counts()
@@ -167,6 +171,8 @@ class QiskitSimulator(QuantumSimulator):
             noise_model=self.noise_model,
             coupling_map=coupling_map,
             basis_gates=self.basis_gates,
+            seed_simulator=self.seed,
+            seed_transpiler=self.seed,
         )
         wavefunction = job.result().get_statevector(ibmq_circuit, decimals=20)
         return Wavefunction(wavefunction)

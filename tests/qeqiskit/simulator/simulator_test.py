@@ -212,6 +212,44 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             < expectation_values_no_compilation.values[0]
         )
 
+    def test_run_circuit_and_measure_seed(self):
+        # Given
+        qubits = [Qubit(i) for i in range(3)]
+        X = Gate("X", qubits=[Qubit(0)])
+        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
+        circuit = Circuit()
+        circuit.qubits = qubits
+        circuit.gates = [X, CNOT]
+        simulator1 = QiskitSimulator("qasm_simulator", seed=643, n_samples=100)
+        simulator2 = QiskitSimulator("qasm_simulator", seed=643, n_samples=100)
+
+        # When
+        measurements1 = simulator1.run_circuit_and_measure(circuit)
+        measurements2 = simulator2.run_circuit_and_measure(circuit)
+
+        # Then
+        for (meas1, meas2) in zip(measurements1.bitstrings, measurements2.bitstrings):
+            assert meas1 == meas2
+
+    def test_get_wavefunction_seed(self):
+        # Given
+        qubits = [Qubit(i) for i in range(3)]
+        X = Gate("X", qubits=[Qubit(0)])
+        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
+        circuit = Circuit()
+        circuit.qubits = qubits
+        circuit.gates = [X, CNOT]
+        simulator1 = QiskitSimulator("statevector_simulator", seed=643)
+        simulator2 = QiskitSimulator("statevector_simulator", seed=643)
+
+        # When
+        wavefunction1 = simulator1.get_wavefunction(circuit)
+        wavefunction2 = simulator2.get_wavefunction(circuit)
+
+        # Then
+        for (ampl1, ampl2) in zip(wavefunction1.amplitudes, wavefunction2.amplitudes):
+            assert ampl1 == ampl2
+
 
 class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
     pass
