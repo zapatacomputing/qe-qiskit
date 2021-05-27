@@ -20,7 +20,7 @@ def get_qiskit_noise_model(
     group: str = "open",
     project: str = "main",
     api_token: Optional[str] = None,
-) -> Tuple(NoiseModel, CircuitConnectivity):
+) -> Tuple[NoiseModel, CircuitConnectivity]:
     """Get a qiskit noise model to use noisy simulations with a qiskit simulator
 
     Args:
