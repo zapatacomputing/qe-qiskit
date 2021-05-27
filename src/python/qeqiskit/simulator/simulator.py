@@ -2,7 +2,7 @@ import numpy as np
 import sys
 from typing import Optional
 
-from qiskit import Aer, execute
+from qiskit import Aer, execute, ClassicalRegister
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
@@ -10,8 +10,7 @@ from pyquil.wavefunction import Wavefunction
 
 from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
-from zquantum.core.circuit import Circuit
-from collections import Counter
+from zquantum.core.wip.circuits import Circuit, export_to_qiskit
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -111,10 +110,11 @@ class QiskitSimulator(QuantumSimulator):
             n_samples = self.n_samples
 
         super().run_circuit_and_measure(circuit)
-        num_qubits = len(circuit.qubits)
+        num_qubits = circuit.n_qubits
 
-        ibmq_circuit = circuit.to_qiskit()
+        ibmq_circuit = export_to_qiskit(circuit)
         ibmq_circuit.barrier(range(num_qubits))
+        ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
         ibmq_circuit.measure(range(num_qubits), range(num_qubits))
 
         coupling_map = None
@@ -158,7 +158,7 @@ class QiskitSimulator(QuantumSimulator):
             pyquil.wavefunction.Wavefunction
         """
         super().get_wavefunction(circuit)
-        ibmq_circuit = circuit.to_qiskit()
+        ibmq_circuit = export_to_qiskit(circuit)
 
         coupling_map = None
         if self.device_connectivity is not None:
