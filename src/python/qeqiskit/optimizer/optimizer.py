@@ -1,5 +1,9 @@
 from zquantum.core.history.recorder import recorder
-from zquantum.core.interfaces.optimizer import Optimizer, optimization_result
+from zquantum.core.interfaces.optimizer import (
+    Optimizer,
+    optimization_result,
+    construct_history_info,
+)
 from qiskit.algorithms.optimizers import SPSA, ADAM
 from scipy.optimize import OptimizeResult
 
@@ -55,9 +59,7 @@ class QiskitOptimizer(Optimizer):
         number_of_variables = len(initial_params)
 
         if self.keep_value_history:
-            cost_function_wrapper = recorder(cost_function)
-        else:
-            cost_function_wrapper = _CostFunctionWrapper(cost_function)
+            cost_function = recorder(cost_function)
 
         gradient_function = None
         if hasattr(cost_function, "gradient") and callable(
@@ -65,19 +67,12 @@ class QiskitOptimizer(Optimizer):
         ):
             gradient_function = cost_function.gradient
 
-        solution, value, _ = optimizer.optimize(
+        solution, value, nfev = optimizer.optimize(
             num_vars=number_of_variables,
-            objective_function=cost_function_wrapper,
+            objective_function=cost_function,
             initial_point=initial_params,
             gradient_function=gradient_function,
         )
-
-        if self.keep_value_history:
-            nfev = len(cost_function_wrapper.history)
-            history = cost_function_wrapper.history
-        else:
-            nfev = cost_function_wrapper.number_of_calls
-            history = []
 
         if self.method == "ADAM" or self.method == "AMSGRAD":
             nit = optimizer._t
@@ -88,6 +83,6 @@ class QiskitOptimizer(Optimizer):
             opt_value=value,
             opt_params=solution,
             nit=nit,
-            history=history,
             nfev=nfev,
+            **construct_history_info(cost_function, self.keep_value_history)
         )
