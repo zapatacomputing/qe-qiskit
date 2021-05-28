@@ -5,17 +5,6 @@ from zquantum.core.interfaces.optimizer import (
     construct_history_info,
 )
 from qiskit.algorithms.optimizers import SPSA, ADAM
-from scipy.optimize import OptimizeResult
-
-
-class _CostFunctionWrapper:
-    def __init__(self, cost_function):
-        self.cost_function = cost_function
-        self.number_of_calls = 0
-
-    def __call__(self, params):
-        self.number_of_calls += 1
-        return self.cost_function(params)
 
 
 class QiskitOptimizer(Optimizer):
