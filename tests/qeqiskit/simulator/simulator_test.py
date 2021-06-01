@@ -1,10 +1,9 @@
 import pytest
-import numpy as np
 import os
 from openfermion.ops import QubitOperator
 import qiskit.providers.aer.noise as AerNoise
 
-from zquantum.core.circuit import Circuit, Gate, Circuit, Qubit
+from zquantum.core.wip.circuits import Circuit, X, CNOT
 from zquantum.core.interfaces.backend_test import (
     QuantumSimulatorTests,
     QuantumSimulatorGatesTest,
@@ -71,12 +70,7 @@ def noisy_simulator(request):
 class TestQiskitSimulator(QuantumSimulatorTests):
     def test_run_circuitset_and_measure(self, sampling_simulator):
         # Given
-        qubits = [Qubit(i) for i in range(3)]
-        X = Gate("X", qubits=[Qubit(0)])
-        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
-        circuit = Circuit()
-        circuit.qubits = qubits
-        circuit.gates = [X, CNOT]
+        circuit = Circuit([X(0), CNOT(1, 2)])
 
         # When
         sampling_simulator.n_samples = 100
@@ -123,13 +117,10 @@ class TestQiskitSimulator(QuantumSimulatorTests):
     def test_expectation_value_with_noisy_simulator(self, noisy_simulator):
         # Given
         # Initialize in |1> state
-        X = Gate("X", qubits=[Qubit(0)])
-        circuit = Circuit()
-        circuit.qubits = [Qubit(0)]
-        circuit.gates = [X]
+        circuit = Circuit([X(0)])
 
         # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-        circuit.gates += [X] * 10
+        circuit += Circuit([X(0) for i in range(10)])
         qubit_operator = QubitOperator("Z0")
         noisy_simulator.n_samples = 8192
         # When
@@ -150,9 +141,9 @@ class TestQiskitSimulator(QuantumSimulatorTests):
 
         # Given
         # Initialize in |1> state
-        circuit.gates = [X]
+        circuit = Circuit([X(0)])
         # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-        circuit.gates += [X] * 50
+        circuit += Circuit([X(0) for i in range(50)])
         qubit_operator = QubitOperator("Z0")
         noisy_simulator.n_samples = 8192
         # When
@@ -189,12 +180,9 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         )
         qubit_operator = QubitOperator("Z0")
         # Initialize in |1> state
-        X = Gate("X", qubits=[Qubit(0)])
-        circuit = Circuit()
-        circuit.qubits = [Qubit(0)]
-        circuit.gates = [X]
+        circuit = Circuit([X(0)])
         # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
-        circuit.gates += [X] * 50
+        circuit += Circuit([X(0) for i in range(50)])
 
         # When
         expectation_values_no_compilation = simulator.get_expectation_values(
@@ -214,12 +202,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
 
     def test_run_circuit_and_measure_seed(self):
         # Given
-        qubits = [Qubit(i) for i in range(3)]
-        X = Gate("X", qubits=[Qubit(0)])
-        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
-        circuit = Circuit()
-        circuit.qubits = qubits
-        circuit.gates = [X, CNOT]
+        circuit = Circuit([X(0), CNOT(1, 2)])
         simulator1 = QiskitSimulator("qasm_simulator", seed=643, n_samples=100)
         simulator2 = QiskitSimulator("qasm_simulator", seed=643, n_samples=100)
 
@@ -233,12 +216,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
 
     def test_get_wavefunction_seed(self):
         # Given
-        qubits = [Qubit(i) for i in range(3)]
-        X = Gate("X", qubits=[Qubit(0)])
-        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
-        circuit = Circuit()
-        circuit.qubits = qubits
-        circuit.gates = [X, CNOT]
+        circuit = Circuit([X(0), CNOT(1, 2)])
         simulator1 = QiskitSimulator("statevector_simulator", seed=643)
         simulator2 = QiskitSimulator("statevector_simulator", seed=643)
 
@@ -252,4 +230,5 @@ class TestQiskitSimulator(QuantumSimulatorTests):
 
 
 class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
+    gates_to_exclude = ["RH", "XY"]
     pass

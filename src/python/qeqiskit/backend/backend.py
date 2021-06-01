@@ -9,17 +9,11 @@ from qiskit.result import Counts
 from qiskit.providers.ibmq.job import IBMQJob
 from qiskit.providers.ibmq.exceptions import IBMQBackendJobLimitError
 from zquantum.core.interfaces.backend import QuantumBackend
-from zquantum.core.circuit import Circuit as OldCircuit
 from zquantum.core.measurement import (
     Measurements,
 )
 from typing import List, Optional, Tuple
-from zquantum.core.wip.circuits import (
-    new_circuit_from_old_circuit,
-    Circuit as NewCircuit,
-    export_to_qiskit,
-)
-from zquantum.core.wip.compatibility_tools import compatible_with_old_type
+from zquantum.core.wip.circuits import Circuit, export_to_qiskit
 import math
 import time
 
@@ -83,11 +77,8 @@ class QiskitBackend(QuantumBackend):
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
 
-    @compatible_with_old_type(
-        old_type=OldCircuit, translate_old_to_wip=new_circuit_from_old_circuit
-    )
     def run_circuit_and_measure(
-        self, circuit: NewCircuit, n_samples: Optional[int] = None, **kwargs
+        self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
     ) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
@@ -104,13 +95,8 @@ class QiskitBackend(QuantumBackend):
             [circuit], [n_samples] if n_samples is not None else None, **kwargs
         )[0]
 
-    @compatible_with_old_type(
-        old_type=OldCircuit,
-        translate_old_to_wip=new_circuit_from_old_circuit,
-        consider_iterable_types=[list, tuple],
-    )
     def transform_circuitset_to_ibmq_experiments(
-        self, circuitset: List[NewCircuit], n_samples: Optional[List[int]] = None
+        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
         count exceeds the maximum allowed by the backend.
@@ -264,14 +250,9 @@ class QiskitBackend(QuantumBackend):
 
         return measurements_set
 
-    @compatible_with_old_type(
-        old_type=OldCircuit,
-        translate_old_to_wip=new_circuit_from_old_circuit,
-        consider_iterable_types=[list],
-    )
     def run_circuitset_and_measure(
         self,
-        circuitset: List[NewCircuit],
+        circuitset: List[Circuit],
         n_samples: Optional[List[int]] = None,
         **kwargs,
     ) -> List[Measurements]:

@@ -1,10 +1,9 @@
 import pytest
 import os
-from qiskit import IBMQ
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
-from qiskit import execute
+import qiskit
 
-from zquantum.core.circuit import Circuit, Gate, Circuit, Qubit
+from zquantum.core.circuits import Circuit, X, CNOT, export_to_qiskit
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
 from qeqiskit.backend import QiskitBackend
 
@@ -26,12 +25,7 @@ def backend(request):
 
 class TestQiskitBackend(QuantumBackendTests):
     def x_cnot_circuit(self):
-        qubits = [Qubit(i) for i in range(3)]
-        X = Gate("X", qubits=[Qubit(0)])
-        CNOT = Gate("CNOT", qubits=[Qubit(1), Qubit(2)])
-        circuit = Circuit()
-        circuit.qubits = qubits
-        circuit.gates = [X, CNOT]
+        circuit = Circuit([X(0), CNOT(1, 2)])
         return circuit
 
     def test_transform_circuitset_to_ibmq_experiments(self, backend):
@@ -58,7 +52,7 @@ class TestQiskitBackend(QuantumBackendTests):
     def test_batch_experiments(self, backend):
         circuit = self.x_cnot_circuit()
         n_circuits = backend.batch_size + 1
-        experiments = (circuit.to_qiskit(),) * n_circuits
+        experiments = (export_to_qiskit(circuit),) * n_circuits
         n_samples_for_ibmq_circuits = (10,) * n_circuits
         batches, n_samples_for_batches = backend.batch_experiments(
             experiments, n_samples_for_ibmq_circuits
@@ -69,8 +63,9 @@ class TestQiskitBackend(QuantumBackendTests):
         assert n_samples_for_batches == [10, 10]
 
     def test_aggregate_measurements(self, backend):
-        circuit = self.x_cnot_circuit().to_qiskit()
+        circuit = export_to_qiskit(self.x_cnot_circuit())
         circuit.barrier(range(3))
+        circuit.add_register(qiskit.ClassicalRegister(3))
         circuit.measure(range(3), range(3))
         batches = [
             [circuit.copy("circuit1"), circuit.copy("circuit2")],
@@ -121,8 +116,8 @@ class TestQiskitBackend(QuantumBackendTests):
         for measurements in measurements_set:
             assert len(measurements.bitstrings) == n_samples
 
-            # Then (since SPAM error could result in unexpected bitstrings, we make sure the most common bitstring is
-            #   the one we expect)
+            # Then (since SPAM error could result in unexpected bitstrings, we make sure
+            # the most common bitstring is the one we expect)
             counts = measurements.get_counts()
             assert max(counts, key=counts.get) == "100"
 
@@ -133,7 +128,7 @@ class TestQiskitBackend(QuantumBackendTests):
         # We can address in the future by using a mock provider.
 
         # Given
-        circuit = self.x_cnot_circuit().to_qiskit()
+        circuit = export_to_qiskit(self.x_cnot_circuit())
         n_samples = 10
         num_jobs = backend.device.job_limit().maximum_jobs + 1
 
@@ -155,9 +150,9 @@ class TestQiskitBackend(QuantumBackendTests):
         # This test has a race condition where the IBMQ server might finish
         # executing the first job before the last one is submitted, causing the
         # test to fail. We can address this in the future using a mock provider.
-        
+
         # Given
-        circuit = self.x_cnot_circuit().to_qiskit()
+        circuit = export_to_qiskit(self.x_cnot_circuit())
         n_samples = 10
         backend.retry_timeout_seconds = 0
         num_jobs = backend.device.job_limit().maximum_jobs + 1
@@ -193,8 +188,8 @@ class TestQiskitBackend(QuantumBackendTests):
                 measurements.bitstrings
             ) == backend.max_shots * math.ceil(n_samples / backend.max_shots)
 
-            # Then (since SPAM error could result in unexpected bitstrings, we make sure the most common bitstring is
-            #   the one we expect)
+            # Then (since SPAM error could result in unexpected bitstrings, we make sure
+            # the most common bitstring is the one we expect)
             counts = measurements.get_counts()
             assert max(counts, key=counts.get) == "100"
 
@@ -249,24 +244,19 @@ class TestQiskitBackend(QuantumBackendTests):
         backend.number_of_circuits_run = 0
         backend.number_of_jobs_run = 0
 
-        qubits = [Qubit(i) for i in range(3)]
-        first_circuit = Circuit()
-        first_circuit.gates = [
-            Gate("X", qubits=[qubits[0]]),
-            Gate("X", qubits=[qubits[0]]),
-            Gate("X", qubits=[qubits[1]]),
-            Gate("X", qubits=[qubits[1]]),
-            Gate("X", qubits=[qubits[2]]),
-        ]
-        first_circuit.qubits = qubits
+        first_circuit = Circuit([
+            X(0),
+            X(0),
+            X(1),
+            X(1),
+            X(2),
+        ])
 
-        second_circuit = Circuit()
-        second_circuit.gates = [
-            Gate("X", qubits=[qubits[0]]),
-            Gate("X", qubits=[qubits[1]]),
-            Gate("X", qubits=[qubits[2]]),
-        ]
-        second_circuit.qubits = qubits
+        second_circuit = Circuit([
+            X(0),
+            X(1),
+            X(2),
+        ])
 
         n_samples = [100, 105]
 
@@ -276,8 +266,8 @@ class TestQiskitBackend(QuantumBackendTests):
             [first_circuit, second_circuit], n_samples
         )
 
-        # Then (since SPAM error could result in unexpected bitstrings, we make sure the most common bitstring is
-        #   the one we expect)
+        # Then (since SPAM error could result in unexpected bitstrings, we make sure the
+        # most common bitstring is the one we expect)
         counts = measurements_set[0].get_counts()
         assert max(counts, key=counts.get) == "001"
         counts = measurements_set[1].get_counts()

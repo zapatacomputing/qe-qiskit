@@ -1,4 +1,4 @@
-from zquantum.core.circuit import save_circuit_connectivity
+from zquantum.core.wip.circuits.layouts import save_circuit_connectivity
 from qeqiskit.utils import save_qiskit_noise_model
 from qeqiskit.noise import (
     get_qiskit_noise_model as _get_qiskit_noise_model,
@@ -41,6 +41,7 @@ def create_phase_damping_noise(T_2, **kwargs):
 def create_phase_and_amplitude_damping_error(T_1, T_2, **kwargs):
     noise_model = _create_phase_and_amplitude_damping_error(T_1, T_2, **kwargs)
     save_qiskit_noise_model(noise_model, "noise-model.json")
+
 
 def create_pta_channel(T_1, T_2, **kwargs):
     noise_model = _create_pta_channel(T_1, T_2, **kwargs)
