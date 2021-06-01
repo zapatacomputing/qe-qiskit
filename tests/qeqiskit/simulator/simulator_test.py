@@ -230,5 +230,5 @@ class TestQiskitSimulator(QuantumSimulatorTests):
 
 
 class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
-    gates_to_exclude = ["RH", "XY"]
+    gates_to_exclude = ["RH"]
     pass
