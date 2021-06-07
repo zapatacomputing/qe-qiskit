@@ -40,6 +40,7 @@ jobs:
           python3 -m pip install z-quantum-core/
           python3 -m pip install .
           python3 -m pip install pytest-cov
+          printenv
           python3 -m pytest --cov=qeqiskit tests/
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
