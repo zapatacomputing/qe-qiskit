@@ -32,7 +32,7 @@ class QiskitOptimizer(Optimizer):
         super().__init__(recorder=recorder)
         self.method = method
         if options is None:
-            options = {}
+            self.options = {}
         else:
             self.options = options
 
