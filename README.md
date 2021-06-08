@@ -1,4 +1,7 @@
 # qe-qiskit
+
+[![codecov](https://codecov.io/gh/zapatacomputing/qe-qiskit/branch/master/graph/badge.svg?token=G64YYS2IOS)](https://codecov.io/gh/zapatacomputing/qe-qiskit)
+
 An Orquestra Quantum Engine Resource for Qiskit
 
 ## Overview
