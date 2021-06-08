@@ -1,36 +1,52 @@
-from zquantum.core.history.recorder import recorder
+import numpy as np
+from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.optimizer import (
     Optimizer,
     optimization_result,
     construct_history_info,
 )
+from zquantum.core.interfaces.functions import CallableWithGradient
+from zquantum.core.typing import RecorderFactory
+from typing import Optional, Dict
 from qiskit.algorithms.optimizers import SPSA, ADAM
 
 
 class QiskitOptimizer(Optimizer):
-    def __init__(self, method, options={}):
+    def __init__(
+        self,
+        method: str,
+        options: Optional[Dict] = None,
+        recorder: RecorderFactory = _recorder,
+    ):
         """
         Args:
-            method(str): specifies optimizer to be used. Currently supports "ADAM", "AMSGRAD" and "SPSA".
-            options(dict): dictionary with additional options for the optimizer.
+            method: specifies optimizer to be used. Currently supports "ADAM", "AMSGRAD" and "SPSA".
+            options: dictionary with additional options for the optimizer.
+            recorder: recorder object which defines how to store the optimization history.
 
         Supported values for the options dictionary:
         Options:
-            keep_value_history(bool): boolean flag indicating whether the history of evaluations should be stored or not.
-            **kwargs: options specific for particular scipy optimizers.
+            **kwargs: options specific for particular qiskit optimizers.
 
         """
-
+        super().__init__(recorder=recorder)
         self.method = method
-        self.options = options
-        self.keep_value_history = self.options.pop("keep_value_history", False)
+        if options is None:
+            options = {}
+        else:
+            self.options = options
 
-    def minimize(self, cost_function, initial_params=None):
+    def _minimize(
+        self,
+        cost_function: CallableWithGradient,
+        initial_params: np.ndarray = None,
+        keep_history: bool = False,
+    ):
         """
         Minimizes given cost function using optimizers from Qiskit Aqua.
 
         Args:
-            cost_function(): python method which takes numpy.ndarray as input
+            cost_function: python method which takes numpy.ndarray as input
             initial_params(np.ndarray): initial parameters to be used for optimization
 
         Returns:
@@ -46,9 +62,6 @@ class QiskitOptimizer(Optimizer):
             optimizer = ADAM(**self.options)
 
         number_of_variables = len(initial_params)
-
-        if self.keep_value_history:
-            cost_function = recorder(cost_function)
 
         gradient_function = None
         if hasattr(cost_function, "gradient") and callable(
@@ -73,5 +86,5 @@ class QiskitOptimizer(Optimizer):
             opt_params=solution,
             nit=nit,
             nfev=nfev,
-            **construct_history_info(cost_function, self.keep_value_history)
+            **construct_history_info(cost_function, keep_history)
         )
