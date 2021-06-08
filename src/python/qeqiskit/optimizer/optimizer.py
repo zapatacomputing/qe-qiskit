@@ -15,26 +15,29 @@ class QiskitOptimizer(Optimizer):
     def __init__(
         self,
         method: str,
-        options: Optional[Dict] = None,
+        optimizer_kwargs: Optional[Dict] = None,
         recorder: RecorderFactory = _recorder,
     ):
         """
         Args:
             method: specifies optimizer to be used. Currently supports "ADAM", "AMSGRAD" and "SPSA".
-            options: dictionary with additional options for the optimizer.
+            optimizer_kwargs: dictionary with additional optimizer_kwargs for the optimizer.
             recorder: recorder object which defines how to store the optimization history.
-
-        Supported values for the options dictionary:
-        Options:
-            **kwargs: options specific for particular qiskit optimizers.
 
         """
         super().__init__(recorder=recorder)
         self.method = method
-        if options is None:
-            self.options = {}
+        if optimizer_kwargs is None:
+            self.optimizer_kwargs = {}
         else:
-            self.options = options
+            self.optimizer_kwargs = optimizer_kwargs
+
+        if self.method == "SPSA":
+            self.optimizer = SPSA(**self.optimizer_kwargs)
+        elif self.method == "ADAM" or self.method == "AMSGRAD":
+            if self.method == "AMSGRAD":
+                self.optimizer_kwargs["amsgrad"] = True
+            self.optimizer = ADAM(**self.optimizer_kwargs)
 
     def _minimize(
         self,
@@ -54,13 +57,6 @@ class QiskitOptimizer(Optimizer):
         """
         history = []
 
-        if self.method == "SPSA":
-            optimizer = SPSA(**self.options)
-        elif self.method == "ADAM" or self.method == "AMSGRAD":
-            if self.method == "AMSGRAD":
-                self.options["amsgrad"] = True
-            optimizer = ADAM(**self.options)
-
         number_of_variables = len(initial_params)
 
         gradient_function = None
@@ -69,7 +65,7 @@ class QiskitOptimizer(Optimizer):
         ):
             gradient_function = cost_function.gradient
 
-        solution, value, nfev = optimizer.optimize(
+        solution, value, nfev = self.optimizer.optimize(
             num_vars=number_of_variables,
             objective_function=cost_function,
             initial_point=initial_params,
@@ -77,9 +73,9 @@ class QiskitOptimizer(Optimizer):
         )
 
         if self.method == "ADAM" or self.method == "AMSGRAD":
-            nit = optimizer._t
+            nit = self.optimizer._t
         else:
-            nit = optimizer.maxiter
+            nit = self.optimizer.maxiter
 
         return optimization_result(
             opt_value=value,
