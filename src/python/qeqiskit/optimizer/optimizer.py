@@ -1,36 +1,55 @@
-from zquantum.core.history.recorder import recorder
+import numpy as np
+from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.optimizer import (
     Optimizer,
     optimization_result,
     construct_history_info,
 )
+from zquantum.core.interfaces.functions import CallableWithGradient
+from zquantum.core.typing import RecorderFactory
+from typing import Optional, Dict
 from qiskit.algorithms.optimizers import SPSA, ADAM
 
 
 class QiskitOptimizer(Optimizer):
-    def __init__(self, method, options={}):
+    def __init__(
+        self,
+        method: str,
+        optimizer_kwargs: Optional[Dict] = None,
+        recorder: RecorderFactory = _recorder,
+    ):
         """
         Args:
-            method(str): specifies optimizer to be used. Currently supports "ADAM", "AMSGRAD" and "SPSA".
-            options(dict): dictionary with additional options for the optimizer.
-
-        Supported values for the options dictionary:
-        Options:
-            keep_value_history(bool): boolean flag indicating whether the history of evaluations should be stored or not.
-            **kwargs: options specific for particular scipy optimizers.
+            method: specifies optimizer to be used. Currently supports "ADAM", "AMSGRAD" and "SPSA".
+            optimizer_kwargs: dictionary with additional optimizer_kwargs for the optimizer.
+            recorder: recorder object which defines how to store the optimization history.
 
         """
-
+        super().__init__(recorder=recorder)
         self.method = method
-        self.options = options
-        self.keep_value_history = self.options.pop("keep_value_history", False)
+        if optimizer_kwargs is None:
+            self.optimizer_kwargs = {}
+        else:
+            self.optimizer_kwargs = optimizer_kwargs
 
-    def minimize(self, cost_function, initial_params=None):
+        if self.method == "SPSA":
+            self.optimizer = SPSA(**self.optimizer_kwargs)
+        elif self.method == "ADAM" or self.method == "AMSGRAD":
+            if self.method == "AMSGRAD":
+                self.optimizer_kwargs["amsgrad"] = True
+            self.optimizer = ADAM(**self.optimizer_kwargs)
+
+    def _minimize(
+        self,
+        cost_function: CallableWithGradient,
+        initial_params: np.ndarray = None,
+        keep_history: bool = False,
+    ):
         """
         Minimizes given cost function using optimizers from Qiskit Aqua.
 
         Args:
-            cost_function(): python method which takes numpy.ndarray as input
+            cost_function: python method which takes numpy.ndarray as input
             initial_params(np.ndarray): initial parameters to be used for optimization
 
         Returns:
@@ -38,17 +57,7 @@ class QiskitOptimizer(Optimizer):
         """
         history = []
 
-        if self.method == "SPSA":
-            optimizer = SPSA(**self.options)
-        elif self.method == "ADAM" or self.method == "AMSGRAD":
-            if self.method == "AMSGRAD":
-                self.options["amsgrad"] = True
-            optimizer = ADAM(**self.options)
-
         number_of_variables = len(initial_params)
-
-        if self.keep_value_history:
-            cost_function = recorder(cost_function)
 
         gradient_function = None
         if hasattr(cost_function, "gradient") and callable(
@@ -56,7 +65,7 @@ class QiskitOptimizer(Optimizer):
         ):
             gradient_function = cost_function.gradient
 
-        solution, value, nfev = optimizer.optimize(
+        solution, value, nfev = self.optimizer.optimize(
             num_vars=number_of_variables,
             objective_function=cost_function,
             initial_point=initial_params,
@@ -64,14 +73,14 @@ class QiskitOptimizer(Optimizer):
         )
 
         if self.method == "ADAM" or self.method == "AMSGRAD":
-            nit = optimizer._t
+            nit = self.optimizer._t
         else:
-            nit = optimizer.maxiter
+            nit = self.optimizer.maxiter
 
         return optimization_result(
             opt_value=value,
             opt_params=solution,
             nit=nit,
             nfev=nfev,
-            **construct_history_info(cost_function, self.keep_value_history)
+            **construct_history_info(cost_function, keep_history)
         )
