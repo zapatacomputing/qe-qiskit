@@ -11,13 +11,16 @@ import pytest
         {"method": "ADAM"},
         {
             "method": "SPSA",
-            "options": {
+            "optimizer_kwargs": {
                 "maxiter": int(1e5),
                 "learning_rate": 1e-3,
                 "perturbation": 1e-5,
             },
         },
-        {"method": "AMSGRAD", "options": {"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4}},
+        {
+            "method": "AMSGRAD",
+            "optimizer_kwargs": {"maxiter": 2e5, "tol": 1e-9, "lr": 1e-4},
+        },
     ]
 )
 def optimizer(request):
