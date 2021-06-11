@@ -1,7 +1,6 @@
 from zquantum.core.history.recorder import recorder
 from qeqiskit.optimizer import QiskitOptimizer
 from zquantum.core.interfaces.optimizer_test import OptimizerTests
-from zquantum.core.interfaces.optimizer_test import sum_x_squared
 import numpy as np
 import pytest
 
@@ -33,7 +32,9 @@ def keep_history(request):
 
 
 class TestQiskitOptimizerTests(OptimizerTests):
-    def test_optimizer_succeeds_on_cost_function_without_gradient(self, optimizer):
+    def test_optimizer_succeeds_on_cost_function_without_gradient(
+        self, optimizer, sum_x_squared
+    ):
         cost_function = sum_x_squared
 
         results = optimizer.minimize(cost_function, initial_params=np.array([1, -1]))
