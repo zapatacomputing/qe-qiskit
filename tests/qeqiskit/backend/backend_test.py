@@ -23,6 +23,20 @@ def backend(request):
     return QiskitBackend(**request.param)
 
 
+@pytest.fixture(
+    params=[
+        {
+            "device_name": "ibmq_qasm_simulator",
+            "n_samples": 1,
+            "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
+            "readout_correction": True,
+        },
+    ]
+)
+def backend_with_readout_correction(request):
+    return QiskitBackend(**request.param)
+
+
 class TestQiskitBackend(QuantumBackendTests):
     def x_cnot_circuit(self):
         circuit = Circuit([X(0), CNOT(1, 2)])
@@ -164,6 +178,27 @@ class TestQiskitBackend(QuantumBackendTests):
             for _ in range(num_jobs):
                 backend.execute_with_retries([circuit], n_samples)
 
+    def test_run_circuitset_and_measure_readout_correction_retries(
+        self, backend_with_readout_correction
+    ):
+        # This test has a race condition where the IBMQ server might finish
+        # executing the first job before the last one is submitted. The test
+        # will still pass in the case, but will not actually perform a retry.
+        # We can address in the future by using a mock provider.
+
+        # Given
+        circuit = self.x_cnot_circuit()
+        n_samples = 10
+        num_circuits = backend_with_readout_correction.batch_size * backend_with_readout_correction.device.job_limit().maximum_jobs + 1
+
+        # When
+        measurements_set = backend_with_readout_correction.run_circuitset_and_measure(
+            [circuit] * num_circuits, [n_samples] * num_circuits
+        )
+
+        # Then
+        assert len(measurements_set) == num_circuits
+
     def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
         # Given
         num_circuits = 200
@@ -244,19 +279,23 @@ class TestQiskitBackend(QuantumBackendTests):
         backend.number_of_circuits_run = 0
         backend.number_of_jobs_run = 0
 
-        first_circuit = Circuit([
-            X(0),
-            X(0),
-            X(1),
-            X(1),
-            X(2),
-        ])
+        first_circuit = Circuit(
+            [
+                X(0),
+                X(0),
+                X(1),
+                X(1),
+                X(2),
+            ]
+        )
 
-        second_circuit = Circuit([
-            X(0),
-            X(1),
-            X(2),
-        ])
+        second_circuit = Circuit(
+            [
+                X(0),
+                X(1),
+                X(2),
+            ]
+        )
 
         n_samples = [100, 105]
 

@@ -343,7 +343,7 @@ class QiskitBackend(QuantumBackend):
             meas_cals, state_labels = complete_meas_cal(qubit_list=qubit_list, qr=qr)
 
             # Execute the calibration circuits
-            job = execute(meas_cals, self.device, shots=self.n_samples)
+            job = self.execute_with_retries(meas_cals, self.n_samples)
             cal_results = job.result()
 
             # Make a calibration matrix
