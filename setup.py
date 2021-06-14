@@ -21,8 +21,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ),
     install_requires=[
-        "qiskit>=0.24.0",
-        "qiskit-ibmq-provider>=0.12.1",
+        "qiskit~=0.26",
+        "qiskit-ibmq-provider~=0.13",
         "numpy>=1.18.1",
         "z-quantum-core",
     ],
