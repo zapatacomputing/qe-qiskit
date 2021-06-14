@@ -1,16 +1,18 @@
-import pytest
 import os
-from openfermion.ops import QubitOperator
-import qiskit.providers.aer.noise as AerNoise
 
-from zquantum.core.wip.circuits import Circuit, X, CNOT
-from zquantum.core.interfaces.backend_test import (
-    QuantumSimulatorTests,
-    QuantumSimulatorGatesTest,
-)
-from zquantum.core.measurement import ExpectationValues
-from qeqiskit.simulator import QiskitSimulator
+import pytest
+import qiskit.providers.aer.noise as AerNoise
+from openfermion.ops import QubitOperator
 from qeqiskit.noise import get_qiskit_noise_model
+from qeqiskit.simulator import QiskitSimulator
+from zquantum.core.estimation import estimate_expectation_values_by_averaging
+from zquantum.core.interfaces.backend_test import (
+    QuantumSimulatorGatesTest,
+    QuantumSimulatorTests,
+)
+from zquantum.core.interfaces.estimation import EstimationTask
+from zquantum.core.measurement import ExpectationValues
+from zquantum.core.wip.circuits import CNOT, Circuit, X
 
 
 @pytest.fixture(
@@ -119,14 +121,21 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         # Initialize in |1> state
         circuit = Circuit([X(0)])
 
-        # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
+        # Flip qubit an even number of times to remain in the |1> state, but allow
+        # decoherence to take effect
         circuit += Circuit([X(0) for i in range(10)])
         qubit_operator = QubitOperator("Z0")
         noisy_simulator.n_samples = 8192
         # When
-        expectation_values_10_gates = noisy_simulator.get_expectation_values(
-            circuit, qubit_operator
-        )
+
+        estimation_tasks = [
+            EstimationTask(qubit_operator, circuit, noisy_simulator.n_samples)
+        ]
+
+        expectation_values_10_gates = estimate_expectation_values_by_averaging(
+            noisy_simulator, estimation_tasks
+        )[0]
+
         # Then
         assert isinstance(expectation_values_10_gates, ExpectationValues)
         assert len(expectation_values_10_gates.values) == 1
@@ -142,14 +151,19 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         # Given
         # Initialize in |1> state
         circuit = Circuit([X(0)])
-        # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
+        # Flip qubit an even number of times to remain in the |1> state, but allow
+        # decoherence to take effect
         circuit += Circuit([X(0) for i in range(50)])
         qubit_operator = QubitOperator("Z0")
         noisy_simulator.n_samples = 8192
         # When
-        expectation_values_50_gates = noisy_simulator.get_expectation_values(
-            circuit, qubit_operator
-        )
+        estimation_tasks = [
+            EstimationTask(qubit_operator, circuit, noisy_simulator.n_samples)
+        ]
+
+        expectation_values_50_gates = estimate_expectation_values_by_averaging(
+            noisy_simulator, estimation_tasks
+        )[0]
         # Then
         assert isinstance(expectation_values_50_gates, ExpectationValues)
         assert len(expectation_values_50_gates.values) == 1
@@ -181,23 +195,28 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         qubit_operator = QubitOperator("Z0")
         # Initialize in |1> state
         circuit = Circuit([X(0)])
-        # Flip qubit an even number of times to remain in the |1> state, but allow decoherence to take effect
+        # Flip qubit an even number of times to remain in the |1> state, but allow
+        # decoherence to take effect
         circuit += Circuit([X(0) for i in range(50)])
 
         # When
-        expectation_values_no_compilation = simulator.get_expectation_values(
-            circuit, qubit_operator
+        estimation_tasks = [
+            EstimationTask(qubit_operator, circuit, simulator.n_samples)
+        ]
+
+        expectation_values_no_compilation = estimate_expectation_values_by_averaging(
+            simulator, estimation_tasks
         )
 
         simulator.optimization_level = 3
-        expectation_values_full_compilation = simulator.get_expectation_values(
-            circuit, qubit_operator
+        expectation_values_full_compilation = estimate_expectation_values_by_averaging(
+            simulator, estimation_tasks
         )
 
         # Then
         assert (
-            expectation_values_full_compilation.values[0]
-            < expectation_values_no_compilation.values[0]
+            expectation_values_full_compilation[0].values[0]
+            < expectation_values_no_compilation[0].values[0]
         )
 
     def test_run_circuit_and_measure_seed(self):
