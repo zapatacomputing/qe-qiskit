@@ -2,7 +2,7 @@ import unittest
 import os
 import qiskit.providers.aer.noise as AerNoise
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
-from zquantum.core.wip.circuits.layouts import CircuitConnectivity
+from zquantum.core.circuits.layouts import CircuitConnectivity
 
 from qeqiskit.noise.basic import (
     get_qiskit_noise_model,
