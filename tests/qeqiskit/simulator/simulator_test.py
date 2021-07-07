@@ -12,7 +12,7 @@ from zquantum.core.interfaces.backend_test import (
 )
 from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.measurement import ExpectationValues
-from zquantum.core.wip.circuits import CNOT, Circuit, X
+from zquantum.core.circuits import CNOT, Circuit, X
 
 
 @pytest.fixture(

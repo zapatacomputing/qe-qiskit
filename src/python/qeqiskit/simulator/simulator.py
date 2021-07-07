@@ -10,7 +10,7 @@ from pyquil.wavefunction import Wavefunction
 
 from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
-from zquantum.core.wip.circuits import Circuit, export_to_qiskit
+from zquantum.core.circuits import Circuit, export_to_qiskit
 
 
 class QiskitSimulator(QuantumSimulator):
