@@ -22,7 +22,6 @@ class QiskitBackend(QuantumBackend):
     def __init__(
         self,
         device_name: str,
-        n_samples: Optional[int] = None,
         hub: Optional[str] = "ibm-q",
         group: Optional[str] = "open",
         project: Optional[str] = "main",
@@ -31,6 +30,7 @@ class QiskitBackend(QuantumBackend):
         optimization_level: Optional[int] = 0,
         retry_delay_seconds: Optional[int] = 60,
         retry_timeout_seconds: Optional[int] = 86400,
+        n_samples_for_calibration: Optional[int] = None,
         **kwargs,
     ):
         """Get a qiskit QPU that adheres to the
@@ -38,7 +38,6 @@ class QiskitBackend(QuantumBackend):
 
         Args:
             device_name: the name of the device
-            n_samples: the number of samples to use when running the device
             hub: IBMQ hub
             group: IBMQ group
             project: IBMQ project
@@ -50,7 +49,7 @@ class QiskitBackend(QuantumBackend):
                 job limit is reached.
             retry_timeout_seconds: Number of seconds to wait
         """
-        super().__init__(n_samples=n_samples)
+        super().__init__()
         self.device_name = device_name
 
         if api_token is not None:
@@ -76,27 +75,23 @@ class QiskitBackend(QuantumBackend):
         )
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
+        self.n_samples_for_calibration = n_samples_for_calibration
 
-    def run_circuit_and_measure(
-        self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
-    ) -> Measurements:
+    def run_circuit_and_measure(self, circuit: Circuit, n_samples: int) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
 
         Args:
             circuit: the circuit to prepare the state
-            n_samples: The number of samples to collect. If None, the
-                number of samples is determined by the n_samples attribute.
-        Returns:
-            A Measurements object containing the observed bitstrings.
+            n_samples: The number of samples to collect.
         """
-
-        return self.run_circuitset_and_measure(
-            [circuit], [n_samples] if n_samples is not None else None, **kwargs
-        )[0]
+        assert isinstance(n_samples, int) and n_samples > 0
+        return self.run_circuitset_and_measure([circuit], [n_samples])[0]
 
     def transform_circuitset_to_ibmq_experiments(
-        self, circuitset: List[Circuit], n_samples: Optional[List[int]] = None
+        self,
+        circuitset: List[Circuit],
+        n_samples: List[int],
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
         count exceeds the maximum allowed by the backend.
@@ -104,7 +99,7 @@ class QiskitBackend(QuantumBackend):
         Args:
             circuitset: The circuits to be executed.
             n_samples: A list of the number of samples to be collected for each
-                circuit. If None, self.n_samples is used for each circuit.
+                circuit.
 
         Returns:
             Tuple containing:
@@ -116,9 +111,6 @@ class QiskitBackend(QuantumBackend):
         ibmq_circuitset = []
         n_samples_for_ibmq_circuits = []
         multiplicities = []
-
-        if not n_samples:
-            n_samples = (self.n_samples,) * len(circuitset)
 
         for n_samples_for_circuit, circuit in zip(n_samples, circuitset):
             ibmq_circuit = export_to_qiskit(circuit)
@@ -200,7 +192,6 @@ class QiskitBackend(QuantumBackend):
         jobs: List[IBMQJob],
         batches: List[List[QuantumCircuit]],
         multiplicities: List[int],
-        **kwargs,
     ) -> List[Measurements]:
         """Combine samples from a circuit set that has been expanded and batched
         to obtain a set of measurements for each of the original circuits. Also
@@ -211,7 +202,6 @@ class QiskitBackend(QuantumBackend):
             batches: The batches of experiments submitted.
             multiplicities: The number of copies of each of the original
                 circuits.
-            kwargs: Passed to self.apply_readout_correction.
 
         Returns:
             A list of list of measurements, where each list of measurements
@@ -237,7 +227,7 @@ class QiskitBackend(QuantumBackend):
                 ibmq_circuit_index += 1
 
             if self.readout_correction:
-                combined_counts = self.apply_readout_correction(combined_counts, kwargs)
+                combined_counts = self._apply_readout_correction(combined_counts)
 
             # qiskit counts object maps bitstrings in reversed order to ints, so we must
             # flip the bitstrings
@@ -253,8 +243,7 @@ class QiskitBackend(QuantumBackend):
     def run_circuitset_and_measure(
         self,
         circuitset: List[Circuit],
-        n_samples: Optional[List[int]] = None,
-        **kwargs,
+        n_samples: List[int],
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
@@ -329,7 +318,7 @@ class QiskitBackend(QuantumBackend):
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
                 time.sleep(self.retry_delay_seconds)
 
-    def apply_readout_correction(self, counts, qubit_list=None, **kwargs):
+    def _apply_readout_correction(self, counts, qubit_list=None):
         if self.readout_correction_filter is None:
 
             for key in counts.keys():
@@ -343,7 +332,7 @@ class QiskitBackend(QuantumBackend):
             meas_cals, state_labels = complete_meas_cal(qubit_list=qubit_list, qr=qr)
 
             # Execute the calibration circuits
-            job = self.execute_with_retries(meas_cals, self.n_samples)
+            job = self.execute_with_retries(meas_cals, self.n_samples_for_calibration)
             cal_results = job.result()
 
             # Make a calibration matrix
