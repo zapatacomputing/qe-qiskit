@@ -2,7 +2,7 @@ import numpy as np
 import qiskit.providers.aer.noise as AerNoise
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
-from zquantum.core.wip.circuits.layouts import CircuitConnectivity
+from zquantum.core.circuits.layouts import CircuitConnectivity
 from qiskit.providers.aer.noise import (
     amplitude_damping_error,
     phase_damping_error,
