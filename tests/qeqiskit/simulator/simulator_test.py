@@ -19,7 +19,6 @@ from zquantum.core.circuits import CNOT, Circuit, X
     params=[
         {
             "device_name": "qasm_simulator",
-            "n_samples": 1,
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
         },
     ]
@@ -55,7 +54,7 @@ def sampling_simulator(request):
 
 @pytest.fixture(
     params=[
-        {"device_name": "qasm_simulator", "n_samples": 1000, "optimization_level": 0},
+        {"device_name": "qasm_simulator", "optimization_level": 0},
     ]
 )
 def noisy_simulator(request):
@@ -75,8 +74,9 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         circuit = Circuit([X(0), CNOT(1, 2)])
 
         # When
-        sampling_simulator.n_samples = 100
-        measurements_set = sampling_simulator.run_circuitset_and_measure([circuit])
+        measurements_set = sampling_simulator.run_circuitset_and_measure(
+            [circuit], [100]
+        )
         # Then
         assert len(measurements_set) == 1
         for measurements in measurements_set:
@@ -84,21 +84,21 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             assert all(bitstring == (1, 0, 0) for bitstring in measurements.bitstrings)
 
         # When
-        sampling_simulator.n_samples = 100
+        n_circuits = 50
+        n_samples = 100
         measurements_set = sampling_simulator.run_circuitset_and_measure(
-            [circuit] * 100
+            [circuit] * n_circuits, [n_samples] * n_circuits
         )
         # Then
-        assert len(measurements_set) == 100
+        assert len(measurements_set) == n_circuits
         for measurements in measurements_set:
-            assert len(measurements.bitstrings) == 100
+            assert len(measurements.bitstrings) == n_samples
             assert all(bitstring == (1, 0, 0) for bitstring in measurements.bitstrings)
 
     def test_setup_basic_simulators(self):
         simulator = QiskitSimulator("qasm_simulator")
         assert isinstance(simulator, QiskitSimulator)
         assert simulator.device_name == "qasm_simulator"
-        assert simulator.n_samples is None
         assert simulator.noise_model is None
         assert simulator.device_connectivity is None
         assert simulator.basis_gates is None
@@ -106,7 +106,6 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         simulator = QiskitSimulator("statevector_simulator")
         assert isinstance(simulator, QiskitSimulator)
         assert simulator.device_name == "statevector_simulator"
-        assert simulator.n_samples is None
         assert simulator.noise_model is None
         assert simulator.device_connectivity is None
         assert simulator.basis_gates is None
@@ -125,12 +124,10 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         # decoherence to take effect
         circuit += Circuit([X(0) for i in range(10)])
         qubit_operator = QubitOperator("Z0")
-        noisy_simulator.n_samples = 8192
+        n_samples = 8192
         # When
 
-        estimation_tasks = [
-            EstimationTask(qubit_operator, circuit, noisy_simulator.n_samples)
-        ]
+        estimation_tasks = [EstimationTask(qubit_operator, circuit, n_samples)]
 
         expectation_values_10_gates = estimate_expectation_values_by_averaging(
             noisy_simulator, estimation_tasks
@@ -143,7 +140,6 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         assert expectation_values_10_gates.values[0] < 0.0
         assert isinstance(noisy_simulator, QiskitSimulator)
         assert noisy_simulator.device_name == "qasm_simulator"
-        assert noisy_simulator.n_samples == 8192
         assert isinstance(noisy_simulator.noise_model, AerNoise.NoiseModel)
         assert noisy_simulator.device_connectivity is not None
         assert noisy_simulator.basis_gates is not None
@@ -155,11 +151,8 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         # decoherence to take effect
         circuit += Circuit([X(0) for i in range(50)])
         qubit_operator = QubitOperator("Z0")
-        noisy_simulator.n_samples = 8192
         # When
-        estimation_tasks = [
-            EstimationTask(qubit_operator, circuit, noisy_simulator.n_samples)
-        ]
+        estimation_tasks = [EstimationTask(qubit_operator, circuit, n_samples)]
 
         expectation_values_50_gates = estimate_expectation_values_by_averaging(
             noisy_simulator, estimation_tasks
@@ -175,7 +168,6 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         )
         assert isinstance(noisy_simulator, QiskitSimulator)
         assert noisy_simulator.device_name == "qasm_simulator"
-        assert noisy_simulator.n_samples == 8192
         assert isinstance(noisy_simulator.noise_model, AerNoise.NoiseModel)
         assert noisy_simulator.device_connectivity is not None
         assert noisy_simulator.basis_gates is not None
@@ -185,9 +177,9 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         noise_model, connectivity = get_qiskit_noise_model(
             "ibmqx2", api_token=os.getenv("ZAPATA_IBMQ_API_TOKEN")
         )
+        n_samples = 8192
         simulator = QiskitSimulator(
             "qasm_simulator",
-            n_samples=8192,
             noise_model=noise_model,
             device_connectivity=connectivity,
             optimization_level=0,
@@ -200,9 +192,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         circuit += Circuit([X(0) for i in range(50)])
 
         # When
-        estimation_tasks = [
-            EstimationTask(qubit_operator, circuit, simulator.n_samples)
-        ]
+        estimation_tasks = [EstimationTask(qubit_operator, circuit, n_samples)]
 
         expectation_values_no_compilation = estimate_expectation_values_by_averaging(
             simulator, estimation_tasks
@@ -222,12 +212,13 @@ class TestQiskitSimulator(QuantumSimulatorTests):
     def test_run_circuit_and_measure_seed(self):
         # Given
         circuit = Circuit([X(0), CNOT(1, 2)])
-        simulator1 = QiskitSimulator("qasm_simulator", seed=643, n_samples=100)
-        simulator2 = QiskitSimulator("qasm_simulator", seed=643, n_samples=100)
+        n_samples = 100
+        simulator1 = QiskitSimulator("qasm_simulator", seed=643)
+        simulator2 = QiskitSimulator("qasm_simulator", seed=643)
 
         # When
-        measurements1 = simulator1.run_circuit_and_measure(circuit)
-        measurements2 = simulator2.run_circuit_and_measure(circuit)
+        measurements1 = simulator1.run_circuit_and_measure(circuit, n_samples)
+        measurements2 = simulator2.run_circuit_and_measure(circuit, n_samples)
 
         # Then
         for (meas1, meas2) in zip(measurements1.bitstrings, measurements2.bitstrings):

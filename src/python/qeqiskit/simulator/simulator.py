@@ -20,7 +20,6 @@ class QiskitSimulator(QuantumSimulator):
     def __init__(
         self,
         device_name,
-        n_samples=None,
         noise_model=None,
         device_connectivity=None,
         basis_gates=None,
@@ -34,7 +33,6 @@ class QiskitSimulator(QuantumSimulator):
 
         Args:
             device_name (string): the name of the device
-            n_samples (int): the number of samples to use when running the device
             noise_model (qiskit.providers.aer.noise.NoiseModel): an optional
                 noise model to pass in for noisy simulations
             device_connectivity (zquantum.core.circuit.CircuitConnectivity): an optional input of an object representing
@@ -47,7 +45,7 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             qeqiskit.backend.QiskitSimulator
         """
-        super().__init__(n_samples=n_samples)
+        super().__init__()
         self.device_name = device_name
         self.noise_model = noise_model
         self.device_connectivity = device_connectivity
@@ -88,28 +86,16 @@ class QiskitSimulator(QuantumSimulator):
                 "Could not find simulator with name: {}".format(self.device_name)
             )
 
-    def run_circuit_and_measure(
-        self, circuit: Circuit, n_samples: Optional[int] = None, **kwargs
-    ) -> Measurements:
+    def run_circuit_and_measure(self, circuit: Circuit, n_samples: int) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
 
         Args:
             circuit: the circuit to prepare the state
-            n_samples: The number of samples to collect. If None, the
-                number of samples is determined by the n_samples attribute.
-
-        Returns:
-            A Measurements object containing the observed bitstrings.
+            n_samples: The number of samples to collect.
         """
-        if n_samples is None:
-            if self.n_samples is None or self.n_samples <= 0:
-                raise ValueError(
-                    "Either n_samples or self.n_samples must be a positive integer when sampling"
-                )
-            n_samples = self.n_samples
 
-        super().run_circuit_and_measure(circuit)
+        super().run_circuit_and_measure(circuit, n_samples)
         num_qubits = circuit.n_qubits
 
         ibmq_circuit = export_to_qiskit(circuit)
