@@ -13,7 +13,7 @@ from zquantum.core.measurement import (
     Measurements,
 )
 from typing import List, Optional, Tuple
-from zquantum.core.wip.circuits import Circuit, export_to_qiskit
+from zquantum.core.circuits import Circuit, export_to_qiskit
 import math
 import time
 

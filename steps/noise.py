@@ -1,4 +1,4 @@
-from zquantum.core.wip.circuits.layouts import save_circuit_connectivity
+from zquantum.core.circuits.layouts import save_circuit_connectivity
 from qeqiskit.utils import save_qiskit_noise_model
 from qeqiskit.noise import (
     get_qiskit_noise_model as _get_qiskit_noise_model,
