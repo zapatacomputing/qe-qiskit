@@ -30,7 +30,7 @@ class QiskitBackend(QuantumBackend):
         optimization_level: Optional[int] = 0,
         retry_delay_seconds: Optional[int] = 60,
         retry_timeout_seconds: Optional[int] = 86400,
-        n_samples_for_calibration: Optional[int] = None,
+        n_samples_for_readout_calibration: Optional[int] = None,
         **kwargs,
     ):
         """Get a qiskit QPU that adheres to the
@@ -75,7 +75,7 @@ class QiskitBackend(QuantumBackend):
         )
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
-        self.n_samples_for_calibration = n_samples_for_calibration
+        self.n_samples_for_readout_calibration = n_samples_for_readout_calibration
 
     def run_circuit_and_measure(self, circuit: Circuit, n_samples: int) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
@@ -332,7 +332,9 @@ class QiskitBackend(QuantumBackend):
             meas_cals, state_labels = complete_meas_cal(qubit_list=qubit_list, qr=qr)
 
             # Execute the calibration circuits
-            job = self.execute_with_retries(meas_cals, self.n_samples_for_calibration)
+            job = self.execute_with_retries(
+                meas_cals, self.n_samples_for_readout_calibration
+            )
             cal_results = job.result()
 
             # Make a calibration matrix

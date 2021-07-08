@@ -28,7 +28,7 @@ def backend(request):
             "device_name": "ibmq_qasm_simulator",
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
             "readout_correction": True,
-            "n_samples_for_calibration": 1,
+            "n_samples_for_readout_calibration": 1,
         },
     ]
 )
@@ -257,7 +257,7 @@ class TestQiskitBackend(QuantumBackendTests):
             device_name="ibmq_qasm_simulator",
             api_token=ibmq_api_token,
             readout_correction=True,
-            n_samples_for_calibration=1000,
+            n_samples_for_readout_calibration=1000,
         )
         circuit = self.x_cnot_circuit()
         n_samples = 1000
