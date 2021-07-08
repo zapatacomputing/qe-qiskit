@@ -86,9 +86,7 @@ class QiskitSimulator(QuantumSimulator):
                 "Could not find simulator with name: {}".format(self.device_name)
             )
 
-    def run_circuit_and_measure(
-        self, circuit: Circuit, n_samples: int, **kwargs
-    ) -> Measurements:
+    def run_circuit_and_measure(self, circuit: Circuit, n_samples: int) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings. Note: the
         number of bitstrings measured is derived from self.n_samples
 
