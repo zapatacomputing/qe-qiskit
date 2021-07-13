@@ -8,7 +8,7 @@ from zquantum.core.interfaces.optimizer import (
 from zquantum.core.interfaces.functions import CallableWithGradient
 from zquantum.core.typing import RecorderFactory
 from typing import Optional, Dict
-from qiskit.algorithms.optimizers import SPSA, ADAM
+from qiskit.algorithms.optimizers import SPSA, ADAM, NFT
 
 
 class QiskitOptimizer(Optimizer):
@@ -38,6 +38,9 @@ class QiskitOptimizer(Optimizer):
             if self.method == "AMSGRAD":
                 self.optimizer_kwargs["amsgrad"] = True
             self.optimizer = ADAM(**self.optimizer_kwargs)
+        elif self.method == "NFT":
+            self.optimizer = NFT(**self.optimizer_kwargs)
+
 
     def _minimize(
         self,
