@@ -77,6 +77,8 @@ class QiskitOptimizer(Optimizer):
 
         if self.method == "ADAM" or self.method == "AMSGRAD":
             nit = self.optimizer._t
+        elif self.method == "NFT":
+            nit = self.optimizer._options['maxiter']
         else:
             nit = self.optimizer.maxiter
 
