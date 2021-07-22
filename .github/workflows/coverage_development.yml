@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Get z-quantum-core
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
         with:
           repository: zapatacomputing/z-quantum-core
           path: z-quantum-core
