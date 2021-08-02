@@ -21,4 +21,3 @@ jobs:
               head: "dev",
               base: "master",
             })
-

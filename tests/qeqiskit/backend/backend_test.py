@@ -14,7 +14,6 @@ import math
     params=[
         {
             "device_name": "ibmq_qasm_simulator",
-            "n_samples": 1,
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
         },
     ]
@@ -27,9 +26,9 @@ def backend(request):
     params=[
         {
             "device_name": "ibmq_qasm_simulator",
-            "n_samples": 1,
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
             "readout_correction": True,
+            "n_samples_for_readout_calibration": 1,
         },
     ]
 )
@@ -39,19 +38,18 @@ def backend_with_readout_correction(request):
 
 class TestQiskitBackend(QuantumBackendTests):
     def x_cnot_circuit(self):
-        circuit = Circuit([X(0), CNOT(1, 2)])
-        return circuit
+        return Circuit([X(0), CNOT(1, 2)])
 
     def test_transform_circuitset_to_ibmq_experiments(self, backend):
         circuit = self.x_cnot_circuit()
         circuitset = (circuit,) * 2
-        backend.n_samples = 2 * backend.max_shots + 1
+        n_samples = [2 * backend.max_shots + 1] * 2
 
         (
             experiments,
             n_samples_for_experiments,
             multiplicities,
-        ) = backend.transform_circuitset_to_ibmq_experiments(circuitset)
+        ) = backend.transform_circuitset_to_ibmq_experiments(circuitset, n_samples)
         assert multiplicities == [3, 3]
         assert n_samples_for_experiments == [
             backend.max_shots,
@@ -123,8 +121,9 @@ class TestQiskitBackend(QuantumBackendTests):
         circuit = self.x_cnot_circuit()
         n_samples = 100
         # When
-        backend.n_samples = n_samples
-        measurements_set = backend.run_circuitset_and_measure([circuit] * num_circuits)
+        measurements_set = backend.run_circuitset_and_measure(
+            [circuit] * num_circuits, [n_samples] * num_circuits
+        )
         # Then
         assert len(measurements_set) == num_circuits
         for measurements in measurements_set:
@@ -189,7 +188,11 @@ class TestQiskitBackend(QuantumBackendTests):
         # Given
         circuit = self.x_cnot_circuit()
         n_samples = 10
-        num_circuits = backend_with_readout_correction.batch_size * backend_with_readout_correction.device.job_limit().maximum_jobs + 1
+        num_circuits = (
+            backend_with_readout_correction.batch_size
+            * backend_with_readout_correction.device.job_limit().maximum_jobs
+            + 1
+        )
 
         # When
         measurements_set = backend_with_readout_correction.run_circuitset_and_measure(
@@ -214,8 +217,9 @@ class TestQiskitBackend(QuantumBackendTests):
         )
 
         # When
-        backend.n_samples = n_samples
-        measurements_set = backend.run_circuitset_and_measure([circuit] * num_circuits)
+        measurements_set = backend.run_circuitset_and_measure(
+            [circuit] * num_circuits, [n_samples] * num_circuits
+        )
         # Then
         assert len(measurements_set) == num_circuits
         for measurements in measurements_set:
@@ -240,7 +244,7 @@ class TestQiskitBackend(QuantumBackendTests):
         circuit = self.x_cnot_circuit()
 
         # When
-        backend.run_circuit_and_measure(circuit)
+        backend.run_circuit_and_measure(circuit, n_samples=1)
 
         # Then
         assert backend.readout_correction
@@ -251,14 +255,14 @@ class TestQiskitBackend(QuantumBackendTests):
         ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
         backend = QiskitBackend(
             device_name="ibmq_qasm_simulator",
-            n_samples=1000,
             api_token=ibmq_api_token,
             readout_correction=True,
+            n_samples_for_readout_calibration=1000,
         )
         circuit = self.x_cnot_circuit()
-
+        n_samples = 1000
         # When
-        backend.run_circuitset_and_measure([circuit] * 10)
+        backend.run_circuitset_and_measure([circuit] * 10, [n_samples] * 10)
 
         # Then
         assert backend.readout_correction
@@ -300,7 +304,6 @@ class TestQiskitBackend(QuantumBackendTests):
         n_samples = [100, 105]
 
         # When
-        backend.n_samples = n_samples
         measurements_set = backend.run_circuitset_and_measure(
             [first_circuit, second_circuit], n_samples
         )
