@@ -60,7 +60,7 @@ def sampling_simulator(request):
 def noisy_simulator(request):
     ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
     noise_model, connectivity = get_qiskit_noise_model(
-        "ibmqx2", api_token=ibmq_api_token
+        "ibmq_santiago", api_token=ibmq_api_token
     )
 
     return QiskitSimulator(
@@ -175,7 +175,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
     def test_optimization_level_of_transpiler(self):
         # Given
         noise_model, connectivity = get_qiskit_noise_model(
-            "ibmqx2", api_token=os.getenv("ZAPATA_IBMQ_API_TOKEN")
+            "ibmq_santiago", api_token=os.getenv("ZAPATA_IBMQ_API_TOKEN")
         )
         n_samples = 8192
         simulator = QiskitSimulator(
