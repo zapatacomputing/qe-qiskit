@@ -11,7 +11,7 @@ from zquantum.core.circuits.symbolic.sympy_expressions import (
 )
 from zquantum.core.circuits.symbolic.translations import translate_expression
 
-from .qiskit_expressions import QISKIT_DIALECT, expression_from_qiskit
+from ._expressions import QISKIT_DIALECT, expression_from_qiskit
 
 QiskitOperation = Tuple[
     qiskit.circuit.Instruction, List[qiskit.circuit.Qubit], List[qiskit.circuit.Clbit]

@@ -4,7 +4,7 @@ import qiskit
 import qiskit.circuit.random
 import sympy
 from zquantum.core.circuits import _builtin_gates, _circuit, _gates
-from qeqiskit.conversion import export_to_qiskit, import_from_qiskit
+from qeqiskit.conversions import export_to_qiskit, import_from_qiskit
 
 # --------- gates ---------
 

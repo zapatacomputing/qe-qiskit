@@ -1,0 +1,2 @@
+from ._circuit_conversions import export_to_qiskit, import_from_qiskit
+from ._openfermion_conversions import qiskitpauli_to_qubitop, qubitop_to_qiskitpauli

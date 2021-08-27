@@ -1,7 +1,7 @@
 import pytest
 import qiskit
 from zquantum.core.circuits.symbolic.expressions import FunctionCall, Symbol
-from qeqiskit.conversion.qiskit_expressions import (
+from qeqiskit.conversions._expressions import (
     QISKIT_DIALECT,
     expression_from_qiskit,
     integer_pow,
