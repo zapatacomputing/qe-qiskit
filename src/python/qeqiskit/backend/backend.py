@@ -1,21 +1,17 @@
-from qiskit import execute, QuantumRegister, QuantumCircuit, ClassicalRegister
-from qiskit.providers.ibmq import IBMQ
-from qiskit.ignis.mitigation.measurement import (
-    complete_meas_cal,
-    CompleteMeasFitter,
-)
-from qiskit.providers.ibmq.exceptions import IBMQAccountError
-from qiskit.result import Counts
-from qiskit.providers.ibmq.job import IBMQJob
-from qiskit.providers.ibmq.exceptions import IBMQBackendJobLimitError
-from zquantum.core.interfaces.backend import QuantumBackend
-from zquantum.core.measurement import (
-    Measurements,
-)
-from typing import List, Optional, Tuple
-from zquantum.core.circuits import Circuit, export_to_qiskit
 import math
 import time
+from typing import List, Optional, Tuple
+
+from qeqiskit.conversions import export_to_qiskit
+from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
+from qiskit.ignis.mitigation.measurement import CompleteMeasFitter, complete_meas_cal
+from qiskit.providers.ibmq import IBMQ
+from qiskit.providers.ibmq.exceptions import IBMQAccountError, IBMQBackendJobLimitError
+from qiskit.providers.ibmq.job import IBMQJob
+from qiskit.result import Counts
+from zquantum.core.circuits import Circuit
+from zquantum.core.interfaces.backend import QuantumBackend
+from zquantum.core.measurement import Measurements
 
 
 class QiskitBackend(QuantumBackend):
