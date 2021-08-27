@@ -24,6 +24,7 @@ setuptools.setup(
         "qiskit~=0.28",
         "qiskit-ibmq-provider~=0.15",
         "symengine~=0.7",
+        "numpy~=1.0",
         "z-quantum-core",
     ],
 )
