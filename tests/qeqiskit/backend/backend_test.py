@@ -1,13 +1,13 @@
-import pytest
-import os
-from qiskit.providers.exceptions import QiskitBackendNotFoundError
-import qiskit
-
-from zquantum.core.circuits import Circuit, X, CNOT, export_to_qiskit
-from zquantum.core.interfaces.backend_test import QuantumBackendTests
-from qeqiskit.backend import QiskitBackend
-
 import math
+import os
+
+import pytest
+import qiskit
+from qeqiskit.backend import QiskitBackend
+from qeqiskit.conversions import export_to_qiskit
+from qiskit.providers.exceptions import QiskitBackendNotFoundError
+from zquantum.core.circuits import CNOT, Circuit, X
+from zquantum.core.interfaces.backend_test import QuantumBackendTests
 
 
 @pytest.fixture(
