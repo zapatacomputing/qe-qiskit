@@ -1,16 +1,17 @@
-import numpy as np
 import sys
-from typing import Optional
 
-from qiskit import Aer, execute, ClassicalRegister
+from pyquil.wavefunction import Wavefunction
+
+from qeqiskit.conversions import export_to_qiskit
+
+from qiskit import Aer, ClassicalRegister, execute
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
-from pyquil.wavefunction import Wavefunction
 
+from zquantum.core.circuits import Circuit
 from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
-from zquantum.core.circuits import Circuit, export_to_qiskit
 
 
 class QiskitSimulator(QuantumSimulator):
