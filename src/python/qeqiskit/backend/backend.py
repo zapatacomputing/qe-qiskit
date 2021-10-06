@@ -114,7 +114,9 @@ class QiskitBackend(QuantumBackend):
             ibmq_circuit.barrier(full_qubit_indices)
             ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
             ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
-
+            
+            print('samples for circuit: ',n_samples_for_circuit )
+            print('max shot: ', self.max_shots )
             multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
 
             for i in range(multiplicities[-1]):
