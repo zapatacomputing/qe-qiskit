@@ -1,7 +1,5 @@
 import sys
 
-from pyquil.wavefunction import Wavefunction
-
 from qeqiskit.conversions import export_to_qiskit
 
 from qiskit import Aer, ClassicalRegister, execute
@@ -12,6 +10,7 @@ from qiskit.transpiler import CouplingMap
 from zquantum.core.circuits import Circuit
 from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
+from zquantum.core.wavefunction import Wavefunction
 
 
 class QiskitSimulator(QuantumSimulator):
