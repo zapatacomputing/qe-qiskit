@@ -8,9 +8,9 @@ from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
 
 from zquantum.core.circuits import Circuit
-from zquantum.core.interfaces.backend import QuantumSimulator, flip_wavefunction
+from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
-from zquantum.core.wavefunction import Wavefunction
+from zquantum.core.wavefunction import Wavefunction, flip_wavefunction
 
 
 class QiskitSimulator(QuantumSimulator):
