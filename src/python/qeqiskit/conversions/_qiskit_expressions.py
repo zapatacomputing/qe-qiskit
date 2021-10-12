@@ -7,7 +7,7 @@ Attributes:
         `zquantum.core.circuit.symbolic.translations.translate_expression`.
 """
 import operator
-from functools import reduce, singledispatch
+from functools import reduce, singledispatch, lru_cache
 from numbers import Number
 
 import qiskit
@@ -62,8 +62,13 @@ def integer_pow(base, exponent: int):
     return reduce(operator.mul, exponent * [base], 1)
 
 
+@lru_cache(maxsize=None)
+def _qiskit_param_from_name(name):
+    return qiskit.circuit.Parameter(name)
+
+
 QISKIT_DIALECT = ExpressionDialect(
-    symbol_factory=lambda symbol: qiskit.circuit.Parameter(symbol.name),
+    symbol_factory=lambda symbol: _qiskit_param_from_name(symbol.name),
     number_factory=lambda number: number,
     known_functions={
         "add": reduction(operator.add),
