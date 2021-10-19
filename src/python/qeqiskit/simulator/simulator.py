@@ -10,9 +10,9 @@ from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
 
 from zquantum.core.circuits import Circuit
-from zquantum.core.interfaces.backend import QuantumSimulator
+from zquantum.core.interfaces.backend import QuantumSimulator, StateVector
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
-from zquantum.core.wavefunction import Wavefunction, flip_wavefunction, flip_amplitudes
+from zquantum.core.wavefunction import flip_amplitudes
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -138,8 +138,8 @@ class QiskitSimulator(QuantumSimulator):
         return Measurements.from_counts(reversed_counts)
 
     def _get_wavefunction_from_native_circuit(
-        self, circuit: Circuit, initial_state
-    ) -> Wavefunction:
+        self, circuit: Circuit, initial_state: StateVector
+    ) -> StateVector:
         """Run a circuit and get the wavefunction of the resulting statevector.
 
         Args:
@@ -169,4 +169,4 @@ class QiskitSimulator(QuantumSimulator):
             seed_transpiler=self.seed,
         )
         wavefunction = job.result().get_statevector(ibmq_circuit, decimals=20)
-        return flip_wavefunction(Wavefunction(wavefunction))
+        return flip_amplitudes(wavefunction)
