@@ -1,8 +1,10 @@
 import sys
 
+import numpy as np
+
 from qeqiskit.conversions import export_to_qiskit
 
-from qiskit import Aer, ClassicalRegister, execute
+from qiskit import Aer, ClassicalRegister, execute, QuantumCircuit
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
@@ -10,7 +12,7 @@ from qiskit.transpiler import CouplingMap
 from zquantum.core.circuits import Circuit
 from zquantum.core.interfaces.backend import QuantumSimulator
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
-from zquantum.core.wavefunction import Wavefunction, flip_wavefunction
+from zquantum.core.wavefunction import Wavefunction, flip_wavefunction, flip_amplitudes
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -135,7 +137,9 @@ class QiskitSimulator(QuantumSimulator):
 
         return Measurements.from_counts(reversed_counts)
 
-    def get_wavefunction(self, circuit):
+    def _get_wavefunction_from_native_circuit(
+        self, circuit: Circuit, initial_state
+    ) -> Wavefunction:
         """Run a circuit and get the wavefunction of the resulting statevector.
 
         Args:
@@ -143,8 +147,12 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             pyquil.wavefunction.Wavefunction
         """
-        super().get_wavefunction(circuit)
         ibmq_circuit = export_to_qiskit(circuit)
+
+        if not np.array_equal(initial_state, [1] + [0] * (2 ** circuit.n_qubits - 1)):
+            state_prep_circuit = QuantumCircuit(circuit.n_qubits)
+            state_prep_circuit.initialize(flip_amplitudes(initial_state))
+            ibmq_circuit = state_prep_circuit.compose(ibmq_circuit)
 
         coupling_map = None
         if self.device_connectivity is not None:
