@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import pytest
 import qiskit.providers.aer.noise as AerNoise
 from openfermion.ops import QubitOperator
@@ -13,7 +12,7 @@ from zquantum.core.interfaces.backend_test import (
 )
 from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.measurement import ExpectationValues
-from zquantum.core.circuits import CNOT, Circuit, X, H
+from zquantum.core.circuits import CNOT, Circuit, X
 
 
 @pytest.fixture(
@@ -238,19 +237,6 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         # Then
         for (ampl1, ampl2) in zip(wavefunction1.amplitudes, wavefunction2.amplitudes):
             assert ampl1 == ampl2
-
-    def test_get_wavefunction_uses_provided_initial_state(self):
-        circuit = Circuit([H(0), H(1)])
-        initial_state = np.array([0, 1, 0, 0])
-        simulator = QiskitSimulator("statevector_simulator")
-        np.testing.assert_allclose(
-            simulator.get_wavefunction(circuit, initial_state=initial_state),
-            np.array([0.5, -0.5, 0.5, -0.5])
-        )
-        np.testing.assert_allclose(
-            simulator.get_wavefunction(circuit),
-            0.5 * np.ones(4)
-        )
 
 
 class TestQiskitSimulatorGates(QuantumSimulatorGatesTest):
