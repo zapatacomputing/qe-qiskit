@@ -8,11 +8,15 @@ from qiskit import Aer, ClassicalRegister, execute, QuantumCircuit
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
+from qiskit.providers.aer.noise import NoiseModel
 
 from zquantum.core.circuits import Circuit
+from zquantum.core.circuits.layouts import CircuitConnectivity
 from zquantum.core.interfaces.backend import QuantumSimulator, StateVector
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
 from zquantum.core.wavefunction import flip_amplitudes
+
+from typing import List, Optional
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -21,31 +25,30 @@ class QiskitSimulator(QuantumSimulator):
 
     def __init__(
         self,
-        device_name,
-        noise_model=None,
-        device_connectivity=None,
-        basis_gates=None,
-        api_token=None,
-        optimization_level=0,
-        seed=None,
+        device_name: str,
+        noise_model: Optional[NoiseModel] = None,
+        device_connectivity: Optional[CircuitConnectivity] = None,
+        basis_gates: Optional[List] = None,
+        api_token: Optional[str] = None,
+        optimization_level: int = 0,
+        seed: Optional[int] = None,
         **kwargs,
     ):
         """Get a qiskit device (simulator or QPU) that adheres to the
         zquantum.core.interfaces.backend.QuantumSimulator
 
         Args:
-            device_name (string): the name of the device
-            noise_model (qiskit.providers.aer.noise.NoiseModel): an optional
+            device_name: the name of the device
+            noise_model: an optional
                 noise model to pass in for noisy simulations
-            device_connectivity (zquantum.core.circuit.CircuitConnectivity): an optional input of an object representing
+            device_connectivity: an optional input of an object representing
                 the connectivity of the device that will be used in simulations
-            basis_gates (list): an optional input of the list of basis gates
+            basis_gates: an optional input of the list of basis gates
                 used in simulations
-            api_token (string): IBMQ Api Token
-            optimization_level (int): optimization level for the default qiskit transpiler (0, 1, 2, or 3)
-
-        Returns:
-            qeqiskit.backend.QiskitSimulator
+            api_token: IBMQ Api Token
+            optimization_level: optimization level for the default qiskit transpiler.
+                It can take values 0, 1, 2 or 3.
+            seed: seed for RNG
         """
         super().__init__()
         self.device_name = device_name
@@ -63,8 +66,8 @@ class QiskitSimulator(QuantumSimulator):
                 IBMQ.enable_account(api_token)
             except IBMQAccountError as e:
                 if (
-                    e.message
-                    != "An IBM Quantum Experience account is already in use for the session."
+                    e.message != "An IBM Quantum Experience account"
+                    "is already in use for the session."
                 ):
                     raise RuntimeError(e)
 
@@ -130,7 +133,8 @@ class QiskitSimulator(QuantumSimulator):
                 .get_counts()
             )
 
-        # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
+        # qiskit counts object maps bitstrings in reversed order to ints,
+        # so we must flip the bitstrings
         reversed_counts = {}
         for bitstring in raw_counts.keys():
             reversed_counts[bitstring[::-1]] = raw_counts[bitstring]

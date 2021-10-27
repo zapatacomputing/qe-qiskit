@@ -32,13 +32,13 @@ def get_qiskit_noise_model(
 
 
     """
-    if api_token is not None and api_token is not "None":
+    if api_token is not None and api_token != "None":
         try:
             IBMQ.enable_account(api_token)
         except IBMQAccountError as e:
             if (
                 e.message
-                != "An IBM Quantum Experience account is already in use for the session."
+                != "An IBM Quantum Experience account is already in use for the session"
             ):
                 raise RuntimeError(e)
 
@@ -145,7 +145,8 @@ def get_kraus_matrices_from_ibm_noise_model(noise_model: NoiseModel) -> Dict:
         noise_model: Noise model for circuit
 
     Return
-        dict_of_kraus_operators(dict): A dictionary labelled by keys which are the basis gates and values are the list of kraus operators
+        dict_of_kraus_operators: A dictionary labelled by keys which are
+            the basis gates and values are the list of kraus operators
 
     """
 

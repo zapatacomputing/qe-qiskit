@@ -41,8 +41,8 @@ class QiskitBackend(QuantumBackend):
             readout_correction: flag of whether or not to use basic readout correction
             optimization_level: optimization level for the default qiskit transpiler (0,
                 1, 2, or 3).
-            retry_delay_seconds: Number of seconds to wait to resubmit a job when backend
-                job limit is reached.
+            retry_delay_seconds: Number of seconds to wait to resubmit a job when
+                backend job limit is reached.
             retry_timeout_seconds: Number of seconds to wait
         """
         super().__init__()

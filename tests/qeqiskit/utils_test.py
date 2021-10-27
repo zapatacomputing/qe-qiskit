@@ -6,8 +6,16 @@ import json
 import qiskit.providers.aer.noise as AerNoise
 
 from zquantum.core.utils import load_noise_model, save_noise_model
-from qeqiskit.utils import save_qiskit_noise_model, load_qiskit_noise_model, save_kraus_operators
-from qeqiskit.noise.basic import create_amplitude_damping_noise,  get_kraus_matrices_from_ibm_noise_model
+from qeqiskit.utils import (
+    save_qiskit_noise_model,
+    load_qiskit_noise_model,
+    save_kraus_operators,
+)
+from qeqiskit.noise.basic import (
+    create_amplitude_damping_noise,
+    get_kraus_matrices_from_ibm_noise_model,
+)
+
 
 class TestQiskitUtils(unittest.TestCase):
     def setUp(self):
@@ -17,7 +25,6 @@ class TestQiskitUtils(unittest.TestCase):
     def test_save_qiskit_noise_model(self):
         # Given
         noise_model = AerNoise.NoiseModel()
-        quantum_error = AerNoise.depolarizing_error(0.0, 1)
         coherent_error = np.asarray(
             [
                 np.asarray(
@@ -55,7 +62,6 @@ class TestQiskitUtils(unittest.TestCase):
     def test_noise_model_io_using_core_functions(self):
         # Given
         noise_model = AerNoise.NoiseModel()
-        quantum_error = AerNoise.depolarizing_error(0.0, 1)
         coherent_error = np.asarray(
             [
                 np.asarray(
@@ -96,12 +102,7 @@ class TestQiskitUtils(unittest.TestCase):
     def test_save_kraus_operators(self):
         noise_model = create_amplitude_damping_noise(self.T_1, self.t_step)
         kraus_dict = get_kraus_matrices_from_ibm_noise_model(noise_model)
-        save_kraus_operators(kraus_dict, 'kraus_operators.json')
+        save_kraus_operators(kraus_dict, "kraus_operators.json")
 
         # Cleanup
         os.remove("kraus_operators.json")
-
-
-
-     
-

@@ -9,6 +9,7 @@ from zquantum.core.interfaces.functions import CallableWithGradient
 from zquantum.core.typing import RecorderFactory
 from typing import Optional, Dict
 from qiskit.algorithms.optimizers import SPSA, ADAM
+from scipy.optimize import OptimizeResult
 
 
 class QiskitOptimizer(Optimizer):
@@ -20,9 +21,12 @@ class QiskitOptimizer(Optimizer):
     ):
         """
         Args:
-            method: specifies optimizer to be used. Currently supports "ADAM", "AMSGRAD" and "SPSA".
-            optimizer_kwargs: dictionary with additional optimizer_kwargs for the optimizer.
-            recorder: recorder object which defines how to store the optimization history.
+            method: specifies optimizer to be used.
+                Currently supports "ADAM", "AMSGRAD" and "SPSA".
+            optimizer_kwargs: dictionary with additional optimizer_kwargs
+                for the optimizer.
+            recorder: recorder object which defines how to store
+                the optimization history.
 
         """
         super().__init__(recorder=recorder)
@@ -44,18 +48,17 @@ class QiskitOptimizer(Optimizer):
         cost_function: CallableWithGradient,
         initial_params: np.ndarray = None,
         keep_history: bool = False,
-    ):
+    ) -> OptimizeResult:
         """
         Minimizes given cost function using optimizers from Qiskit Aqua.
 
         Args:
             cost_function: python method which takes numpy.ndarray as input
-            initial_params(np.ndarray): initial parameters to be used for optimization
+            initial_params: initial parameters to be used for optimization
 
         Returns:
-            optimization_results(scipy.optimize.OptimizeResults): results of the optimization.
+            optimization_results: results of the optimization.
         """
-        history = []
 
         number_of_variables = len(initial_params)
 
