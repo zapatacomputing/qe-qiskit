@@ -1,27 +1,23 @@
-# This is a basic workflow to help you get started with Actions
+name: style
 
-name: TestCoverage
-
-# Triggers the workflow on push or pull to dev
+# Trigger on push
 on:
   push:
     branches:
-      - main
+      - dev
   pull_request:
     branches:
-      - main
+      - dev
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
-  # This workflow contains a single job called "build"
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Git Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
       # ------------------------------------------------------------------------
       # Only use ssh when a second private repo needs to be installed....
@@ -36,11 +32,12 @@ jobs:
         with:
           repository: zapatacomputing/z-quantum-core
           path: z-quantum-core
+          ref: dev
 
       - name: Install z-quantum-core
         run: |
           python3 -m pip install --user ./z-quantum-core
 
-      - uses: ./subtrees/z_quantum_actions/actions/coverage
-        with:
-          codecov_secret: ${{ secrets.CODECOV_TOKEN }}
+
+      # Pull in the style includes
+      - uses: ./subtrees/z_quantum_actions/actions/style
