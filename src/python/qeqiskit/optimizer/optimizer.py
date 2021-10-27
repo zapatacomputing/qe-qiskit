@@ -46,7 +46,7 @@ class QiskitOptimizer(Optimizer):
     def _minimize(
         self,
         cost_function: CallableWithGradient,
-        initial_params: np.ndarray = None,
+        initial_params: np.ndarray,
         keep_history: bool = False,
     ) -> OptimizeResult:
         """

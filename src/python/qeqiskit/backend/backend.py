@@ -150,7 +150,7 @@ class QiskitBackend(QuantumBackend):
               as many samples as specified by n_samples_for_ibmq_circuits.
         """
 
-        batches = []
+        batches: List = []
         n_samples_for_batches = []
         while len(batches) * self.batch_size < len(experiments):
             batches.append(
@@ -312,7 +312,7 @@ class QiskitBackend(QuantumBackend):
                             "backend job limit."
                         )
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
-                time.sleep(self.retry_delay_seconds)
+                time.sleep(self.retry_delay_seconds)  # type: ignore
 
     def _apply_readout_correction(self, counts, qubit_list=None):
         if self.readout_correction_filter is None:
