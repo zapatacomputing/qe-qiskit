@@ -1,14 +1,14 @@
+import json
+from typing import TextIO
+
+import numpy as np
 import qiskit.providers.aer.noise as AerNoise
 import qiskit.quantum_info.operators.channel as Channel
-from typing import TextIO
-import json
 from zquantum.core.utils import (
     SCHEMA_VERSION,
     convert_array_to_dict,
     convert_dict_to_array,
 )
-
-import numpy as np
 
 
 def save_qiskit_noise_model(noise_model: AerNoise.NoiseModel, filename: str) -> None:

@@ -7,7 +7,7 @@ Attributes:
         `zquantum.core.circuit.symbolic.translations.translate_expression`.
 """
 import operator
-from functools import reduce, singledispatch, lru_cache
+from functools import lru_cache, reduce, singledispatch
 from numbers import Number
 
 import qiskit

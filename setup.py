@@ -1,5 +1,6 @@
-import setuptools
 import warnings
+
+import setuptools
 
 try:
     from subtrees.z_quantum_actions.setup_extras import extras

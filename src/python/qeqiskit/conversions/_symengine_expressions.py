@@ -5,7 +5,6 @@ from numbers import Number
 
 import symengine
 from symengine.lib.symengine_wrapper import ImaginaryUnit
-
 from zquantum.core.circuits.symbolic.expressions import (
     ExpressionDialect,
     FunctionCall,
