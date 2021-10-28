@@ -44,3 +44,6 @@ jobs:
       - uses: ./subtrees/z_quantum_actions/actions/coverage
         with:
           codecov_secret: ${{ secrets.CODECOV_TOKEN }}
+        env:
+          ZAPATA_IBMQ_API_TOKEN: ${{ secrets.ZAPATA_IBMQ_API_TOKEN }}
+
