@@ -53,8 +53,7 @@ class QiskitBackend(QuantumBackend):
                 IBMQ.enable_account(api_token)
             except IBMQAccountError as e:
                 if e.message != (
-                    "An IBM Quantum Experience account is already in use "
-                    "for the session."
+                    "An IBM Quantum Experience account is already in use for the session."  # noqa: E501
                 ):
                     raise RuntimeError(e)
 

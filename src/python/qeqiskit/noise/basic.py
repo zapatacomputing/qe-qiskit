@@ -39,7 +39,7 @@ def get_qiskit_noise_model(
         except IBMQAccountError as e:
             if (
                 e.message
-                != "An IBM Quantum Experience account is already in use for the session"
+                != "An IBM Quantum Experience account is already in use for the session."  # noqa: E501
             ):
                 raise RuntimeError(e)
 
