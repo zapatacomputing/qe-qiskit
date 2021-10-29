@@ -41,8 +41,8 @@ class QiskitBackend(QuantumBackend):
             readout_correction: flag of whether or not to use basic readout correction
             optimization_level: optimization level for the default qiskit transpiler (0,
                 1, 2, or 3).
-            retry_delay_seconds: Number of seconds to wait to resubmit a job when backend
-                job limit is reached.
+            retry_delay_seconds: Number of seconds to wait to resubmit a job when
+                backend job limit is reached.
             retry_timeout_seconds: Number of seconds to wait
         """
         super().__init__()
@@ -53,8 +53,7 @@ class QiskitBackend(QuantumBackend):
                 IBMQ.enable_account(api_token)
             except IBMQAccountError as e:
                 if e.message != (
-                    "An IBM Quantum Experience account is already in use "
-                    "for the session."
+                    "An IBM Quantum Experience account is already in use for the session."  # noqa: E501
                 ):
                     raise RuntimeError(e)
 
@@ -150,7 +149,7 @@ class QiskitBackend(QuantumBackend):
               as many samples as specified by n_samples_for_ibmq_circuits.
         """
 
-        batches = []
+        batches: List = []
         n_samples_for_batches = []
         while len(batches) * self.batch_size < len(experiments):
             batches.append(
@@ -312,7 +311,7 @@ class QiskitBackend(QuantumBackend):
                             "backend job limit."
                         )
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
-                time.sleep(self.retry_delay_seconds)
+                time.sleep(self.retry_delay_seconds)  # type: ignore
 
     def _apply_readout_correction(self, counts, qubit_list=None):
         if self.readout_correction_filter is None:

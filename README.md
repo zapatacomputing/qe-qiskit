@@ -1,12 +1,12 @@
 # qe-qiskit
 
-[![codecov](https://codecov.io/gh/zapatacomputing/qe-qiskit/branch/master/graph/badge.svg?token=G64YYS2IOS)](https://codecov.io/gh/zapatacomputing/qe-qiskit)
+[![codecov](https://codecov.io/gh/zapatacomputing/qe-qiskit/branch/main/graph/badge.svg?token=G64YYS2IOS)](https://codecov.io/gh/zapatacomputing/qe-qiskit)
 
 An Orquestra Quantum Engine Resource for Qiskit
 
 ## Overview
 
-`qe-qiskit` is a Python module that exposes Qiskit's simulators as a [`z-quantum-core`](https://github.com/zapatacomputing/z-quantum-core/blob/master/src/python/zquantum/core/interfaces/backend.py) `QuantumSimulator`. It can be imported with:
+`qe-qiskit` is a Python module that exposes Qiskit's simulators as a [`z-quantum-core`](https://github.com/zapatacomputing/z-quantum-core/blob/main/src/python/zquantum/core/interfaces/backend.py) `QuantumSimulator`. It can be imported with:
 
 ```
 from qeqiskit.simulator import QiskitSimulator

@@ -1,8 +1,8 @@
-from zquantum.core.history.recorder import recorder
-from qeqiskit.optimizer import QiskitOptimizer
-from zquantum.core.interfaces.optimizer_test import OptimizerTests
 import numpy as np
 import pytest
+from qeqiskit.optimizer import QiskitOptimizer
+from zquantum.core.history.recorder import recorder
+from zquantum.core.interfaces.optimizer_test import OptimizerTests
 
 
 @pytest.fixture(
