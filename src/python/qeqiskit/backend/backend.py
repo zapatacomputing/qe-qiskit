@@ -237,7 +237,7 @@ class QiskitBackend(QuantumBackend):
 
     def run_circuitset_and_measure(
         self,
-        circuitset: List[Circuit],
+        circuits: List[Circuit],
         n_samples: List[int],
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
@@ -256,7 +256,7 @@ class QiskitBackend(QuantumBackend):
             experiments,
             n_samples_for_experiments,
             multiplicities,
-        ) = self.transform_circuitset_to_ibmq_experiments(circuitset, n_samples)
+        ) = self.transform_circuitset_to_ibmq_experiments(circuits, n_samples)
         batches, n_samples_for_batches = self.batch_experiments(
             experiments, n_samples_for_experiments
         )
