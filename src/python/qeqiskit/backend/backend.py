@@ -266,7 +266,7 @@ class QiskitBackend(QuantumBackend):
             for n_samples, batch in zip(n_samples_for_batches, batches)
         ]
 
-        self.number_of_circuits_run += len(circuitset)
+        self.number_of_circuits_run += len(circuits)
         self.number_of_jobs_run += len(batches)
 
         return self.aggregregate_measurements(jobs, batches, multiplicities)
