@@ -1,23 +1,23 @@
-import unittest
 import os
-import qiskit.providers.aer.noise as AerNoise
-from qiskit.providers.exceptions import QiskitBackendNotFoundError
-from zquantum.core.circuits.layouts import CircuitConnectivity
+import unittest
 
+import qiskit.providers.aer.noise as AerNoise
 from qeqiskit.noise.basic import (
-    get_qiskit_noise_model,
     create_amplitude_damping_noise,
-    create_phase_damping_noise,
     create_phase_and_amplitude_damping_error,
+    create_phase_damping_noise,
     create_pta_channel,
     get_kraus_matrices_from_ibm_noise_model,
+    get_qiskit_noise_model,
 )
+from qiskit.providers.exceptions import QiskitBackendNotFoundError
+from zquantum.core.circuits.layouts import CircuitConnectivity
 
 
 class TestBasic(unittest.TestCase):
     def setUp(self):
         self.ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        self.all_devices = ["ibmqx2"]
+        self.all_devices = ["ibmq_santiago"]
         self.T_1 = 10e-7
         self.T_2 = 30e-7
         self.t_step = 10e-9

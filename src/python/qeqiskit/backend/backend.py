@@ -1,21 +1,17 @@
-from qiskit import execute, QuantumRegister, QuantumCircuit, ClassicalRegister
-from qiskit.providers.ibmq import IBMQ
-from qiskit.ignis.mitigation.measurement import (
-    complete_meas_cal,
-    CompleteMeasFitter,
-)
-from qiskit.providers.ibmq.exceptions import IBMQAccountError
-from qiskit.result import Counts
-from qiskit.providers.ibmq.job import IBMQJob
-from qiskit.providers.ibmq.exceptions import IBMQBackendJobLimitError
-from zquantum.core.interfaces.backend import QuantumBackend
-from zquantum.core.measurement import (
-    Measurements,
-)
-from typing import List, Optional, Tuple
-from zquantum.core.circuits import Circuit, export_to_qiskit
 import math
 import time
+from typing import List, Optional, Tuple
+
+from qeqiskit.conversions import export_to_qiskit
+from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
+from qiskit.ignis.mitigation.measurement import CompleteMeasFitter, complete_meas_cal
+from qiskit.providers.ibmq import IBMQ
+from qiskit.providers.ibmq.exceptions import IBMQAccountError, IBMQBackendJobLimitError
+from qiskit.providers.ibmq.job import IBMQJob
+from qiskit.result import Counts
+from zquantum.core.circuits import Circuit
+from zquantum.core.interfaces.backend import QuantumBackend
+from zquantum.core.measurement import Measurements
 
 
 class QiskitBackend(QuantumBackend):
@@ -45,8 +41,8 @@ class QiskitBackend(QuantumBackend):
             readout_correction: flag of whether or not to use basic readout correction
             optimization_level: optimization level for the default qiskit transpiler (0,
                 1, 2, or 3).
-            retry_delay_seconds: Number of seconds to wait to resubmit a job when backend
-                job limit is reached.
+            retry_delay_seconds: Number of seconds to wait to resubmit a job when
+                backend job limit is reached.
             retry_timeout_seconds: Number of seconds to wait
         """
         super().__init__()
@@ -57,8 +53,7 @@ class QiskitBackend(QuantumBackend):
                 IBMQ.enable_account(api_token)
             except IBMQAccountError as e:
                 if e.message != (
-                    "An IBM Quantum Experience account is already in use "
-                    "for the session."
+                    "An IBM Quantum Experience account is already in use for the session."  # noqa: E501
                 ):
                     raise RuntimeError(e)
 
@@ -154,7 +149,7 @@ class QiskitBackend(QuantumBackend):
               as many samples as specified by n_samples_for_ibmq_circuits.
         """
 
-        batches = []
+        batches: List = []
         n_samples_for_batches = []
         while len(batches) * self.batch_size < len(experiments):
             batches.append(
@@ -242,7 +237,7 @@ class QiskitBackend(QuantumBackend):
 
     def run_circuitset_and_measure(
         self,
-        circuitset: List[Circuit],
+        circuits: List[Circuit],
         n_samples: List[int],
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
@@ -263,7 +258,7 @@ class QiskitBackend(QuantumBackend):
             experiments,
             n_samples_for_experiments,
             multiplicities,
-        ) = self.transform_circuitset_to_ibmq_experiments(circuitset, n_samples)
+        ) = self.transform_circuitset_to_ibmq_experiments(circuits, n_samples)
         batches, n_samples_for_batches = self.batch_experiments(
             experiments, n_samples_for_experiments
         )
@@ -273,7 +268,7 @@ class QiskitBackend(QuantumBackend):
             for n_samples, batch in zip(n_samples_for_batches, batches)
         ]
 
-        self.number_of_circuits_run += len(circuitset)
+        self.number_of_circuits_run += len(circuits)
         self.number_of_jobs_run += len(batches)
 
         return self.aggregregate_measurements(jobs, batches, multiplicities)
@@ -318,7 +313,7 @@ class QiskitBackend(QuantumBackend):
                             "backend job limit."
                         )
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
-                time.sleep(self.retry_delay_seconds)
+                time.sleep(self.retry_delay_seconds)  # type: ignore
 
     def _apply_readout_correction(self, counts, qubit_list=None):
         if self.readout_correction_filter is None:

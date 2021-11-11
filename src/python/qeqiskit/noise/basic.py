@@ -1,17 +1,18 @@
+from typing import Dict, Optional, Tuple
+
 import numpy as np
 import qiskit.providers.aer.noise as AerNoise
+from qiskit.providers.aer.noise import (
+    NoiseModel,
+    amplitude_damping_error,
+    pauli_error,
+    phase_amplitude_damping_error,
+    phase_damping_error,
+)
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
-from zquantum.core.circuits.layouts import CircuitConnectivity
-from qiskit.providers.aer.noise import (
-    amplitude_damping_error,
-    phase_damping_error,
-    phase_amplitude_damping_error,
-    pauli_error,
-)
-from qiskit.providers.aer.noise import NoiseModel
 from qiskit.quantum_info import Kraus
-from typing import Optional, Tuple, Dict
+from zquantum.core.circuits.layouts import CircuitConnectivity
 
 
 def get_qiskit_noise_model(
@@ -32,13 +33,13 @@ def get_qiskit_noise_model(
 
 
     """
-    if api_token is not None and api_token is not "None":
+    if api_token is not None and api_token != "None":
         try:
             IBMQ.enable_account(api_token)
         except IBMQAccountError as e:
             if (
                 e.message
-                != "An IBM Quantum Experience account is already in use for the session."
+                != "An IBM Quantum Experience account is already in use for the session."  # noqa: E501
             ):
                 raise RuntimeError(e)
 
@@ -145,7 +146,8 @@ def get_kraus_matrices_from_ibm_noise_model(noise_model: NoiseModel) -> Dict:
         noise_model: Noise model for circuit
 
     Return
-        dict_of_kraus_operators(dict): A dictionary labelled by keys which are the basis gates and values are the list of kraus operators
+        dict_of_kraus_operators: A dictionary labelled by keys which are
+            the basis gates and values are the list of kraus operators
 
     """
 

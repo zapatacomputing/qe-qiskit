@@ -1,14 +1,16 @@
+from typing import Dict, Optional
+
 import numpy as np
+from qiskit.algorithms.optimizers import ADAM, SPSA, NFT
+from scipy.optimize import OptimizeResult
 from zquantum.core.history.recorder import recorder as _recorder
+from zquantum.core.interfaces.functions import CallableWithGradient
 from zquantum.core.interfaces.optimizer import (
     Optimizer,
-    optimization_result,
     construct_history_info,
+    optimization_result,
 )
-from zquantum.core.interfaces.functions import CallableWithGradient
 from zquantum.core.typing import RecorderFactory
-from typing import Optional, Dict
-from qiskit.algorithms.optimizers import SPSA, ADAM, NFT
 
 
 class QiskitOptimizer(Optimizer):
@@ -20,9 +22,12 @@ class QiskitOptimizer(Optimizer):
     ):
         """
         Args:
-            method: specifies optimizer to be used. Currently supports "ADAM", "AMSGRAD" and "SPSA".
-            optimizer_kwargs: dictionary with additional optimizer_kwargs for the optimizer.
-            recorder: recorder object which defines how to store the optimization history.
+            method: specifies optimizer to be used.
+                Currently supports "ADAM", "AMSGRAD" and "SPSA".
+            optimizer_kwargs: dictionary with additional optimizer_kwargs
+                for the optimizer.
+            recorder: recorder object which defines how to store
+                the optimization history.
 
         """
         super().__init__(recorder=recorder)
@@ -41,24 +46,22 @@ class QiskitOptimizer(Optimizer):
         elif self.method == "NFT":
             self.optimizer = NFT(**self.optimizer_kwargs)
 
-
     def _minimize(
         self,
         cost_function: CallableWithGradient,
-        initial_params: np.ndarray = None,
+        initial_params: np.ndarray,
         keep_history: bool = False,
-    ):
+    ) -> OptimizeResult:
         """
         Minimizes given cost function using optimizers from Qiskit Aqua.
 
         Args:
             cost_function: python method which takes numpy.ndarray as input
-            initial_params(np.ndarray): initial parameters to be used for optimization
+            initial_params: initial parameters to be used for optimization
 
         Returns:
-            optimization_results(scipy.optimize.OptimizeResults): results of the optimization.
+            optimization_results: results of the optimization.
         """
-        history = []
 
         number_of_variables = len(initial_params)
 
@@ -78,7 +81,7 @@ class QiskitOptimizer(Optimizer):
         if self.method == "ADAM" or self.method == "AMSGRAD":
             nit = self.optimizer._t
         elif self.method == "NFT":
-            nit = self.optimizer._options['maxiter']
+            nit = self.optimizer._options["maxiter"]
         else:
             nit = self.optimizer.maxiter
 

@@ -1,16 +1,18 @@
-import numpy as np
 import sys
-from typing import Optional
+from typing import List, Optional
 
-from qiskit import Aer, execute, ClassicalRegister
+import numpy as np
+from qeqiskit.conversions import export_to_qiskit
+from qiskit import Aer, ClassicalRegister, QuantumCircuit, execute
+from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError
 from qiskit.transpiler import CouplingMap
-from pyquil.wavefunction import Wavefunction
-
-from zquantum.core.interfaces.backend import QuantumSimulator
+from zquantum.core.circuits import Circuit
+from zquantum.core.circuits.layouts import CircuitConnectivity
+from zquantum.core.interfaces.backend import QuantumSimulator, StateVector
 from zquantum.core.measurement import Measurements, sample_from_wavefunction
-from zquantum.core.circuits import Circuit, export_to_qiskit
+from zquantum.core.wavefunction import flip_amplitudes
 
 
 class QiskitSimulator(QuantumSimulator):
@@ -19,31 +21,30 @@ class QiskitSimulator(QuantumSimulator):
 
     def __init__(
         self,
-        device_name,
-        noise_model=None,
-        device_connectivity=None,
-        basis_gates=None,
-        api_token=None,
-        optimization_level=0,
-        seed=None,
+        device_name: str,
+        noise_model: Optional[NoiseModel] = None,
+        device_connectivity: Optional[CircuitConnectivity] = None,
+        basis_gates: Optional[List] = None,
+        api_token: Optional[str] = None,
+        optimization_level: int = 0,
+        seed: Optional[int] = None,
         **kwargs,
     ):
         """Get a qiskit device (simulator or QPU) that adheres to the
         zquantum.core.interfaces.backend.QuantumSimulator
 
         Args:
-            device_name (string): the name of the device
-            noise_model (qiskit.providers.aer.noise.NoiseModel): an optional
+            device_name: the name of the device
+            noise_model: an optional
                 noise model to pass in for noisy simulations
-            device_connectivity (zquantum.core.circuit.CircuitConnectivity): an optional input of an object representing
+            device_connectivity: an optional input of an object representing
                 the connectivity of the device that will be used in simulations
-            basis_gates (list): an optional input of the list of basis gates
+            basis_gates: an optional input of the list of basis gates
                 used in simulations
-            api_token (string): IBMQ Api Token
-            optimization_level (int): optimization level for the default qiskit transpiler (0, 1, 2, or 3)
-
-        Returns:
-            qeqiskit.backend.QiskitSimulator
+            api_token: IBMQ Api Token
+            optimization_level: optimization level for the default qiskit transpiler.
+                It can take values 0, 1, 2 or 3.
+            seed: seed for RNG
         """
         super().__init__()
         self.device_name = device_name
@@ -62,7 +63,7 @@ class QiskitSimulator(QuantumSimulator):
             except IBMQAccountError as e:
                 if (
                     e.message
-                    != "An IBM Quantum Experience account is already in use for the session."
+                    != "An IBM Quantum Experience account is already in use for the session."  # noqa: E501
                 ):
                     raise RuntimeError(e)
 
@@ -128,14 +129,17 @@ class QiskitSimulator(QuantumSimulator):
                 .get_counts()
             )
 
-        # qiskit counts object maps bitstrings in reversed order to ints, so we must flip the bitstrings
+        # qiskit counts object maps bitstrings in reversed order to ints,
+        # so we must flip the bitstrings
         reversed_counts = {}
         for bitstring in raw_counts.keys():
             reversed_counts[bitstring[::-1]] = raw_counts[bitstring]
 
         return Measurements.from_counts(reversed_counts)
 
-    def get_wavefunction(self, circuit):
+    def _get_wavefunction_from_native_circuit(
+        self, circuit: Circuit, initial_state: StateVector
+    ) -> StateVector:
         """Run a circuit and get the wavefunction of the resulting statevector.
 
         Args:
@@ -143,8 +147,12 @@ class QiskitSimulator(QuantumSimulator):
         Returns:
             pyquil.wavefunction.Wavefunction
         """
-        super().get_wavefunction(circuit)
         ibmq_circuit = export_to_qiskit(circuit)
+
+        if not np.array_equal(initial_state, [1] + [0] * (2 ** circuit.n_qubits - 1)):
+            state_prep_circuit = QuantumCircuit(circuit.n_qubits)
+            state_prep_circuit.initialize(flip_amplitudes(initial_state))
+            ibmq_circuit = state_prep_circuit.compose(ibmq_circuit)
 
         coupling_map = None
         if self.device_connectivity is not None:
@@ -161,4 +169,4 @@ class QiskitSimulator(QuantumSimulator):
             seed_transpiler=self.seed,
         )
         wavefunction = job.result().get_statevector(ibmq_circuit, decimals=20)
-        return Wavefunction(wavefunction)
+        return flip_amplitudes(wavefunction)
