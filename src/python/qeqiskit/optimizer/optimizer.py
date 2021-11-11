@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
 import numpy as np
-from qiskit.algorithms.optimizers import ADAM, SPSA, NFT
+from qiskit.algorithms.optimizers import ADAM, NFT, SPSA
 from scipy.optimize import OptimizeResult
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.functions import CallableWithGradient

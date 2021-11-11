@@ -1,13 +1,12 @@
 import numpy as np
 import pytest
 from qeqiskit.optimizer import QiskitOptimizer
-from zquantum.core.interfaces.optimizer_test import (
-    OptimizerTests,
-    MANDATORY_OPTIMIZATION_RESULT_FIELDS,
-)
-
-from zquantum.core.interfaces.functions import FunctionWithGradient
 from zquantum.core.gradients import finite_differences_gradient
+from zquantum.core.interfaces.functions import FunctionWithGradient
+from zquantum.core.interfaces.optimizer_test import (
+    MANDATORY_OPTIMIZATION_RESULT_FIELDS,
+    OptimizerTests,
+)
 
 
 @pytest.fixture(
