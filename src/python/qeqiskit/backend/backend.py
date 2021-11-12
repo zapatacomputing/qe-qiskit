@@ -252,6 +252,8 @@ class QiskitBackend(QuantumBackend):
             A list of Measurements objects containing the observed bitstrings.
         """
 
+        assert isinstance(n_samples, list)
+        assert isinstance(n_samples[0], int)
         (
             experiments,
             n_samples_for_experiments,
