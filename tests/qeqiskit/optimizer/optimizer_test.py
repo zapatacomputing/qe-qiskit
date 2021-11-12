@@ -80,12 +80,15 @@ class TestQiskitSinusoidalOptimizerTests(OptimizerTests):
         zero."""
         return lambda x: -np.sum(np.cos(x)) + x.shape[0]
 
+    @pytest.mark.skip(reason="Optimizer only supports sinusoidal cost functions")
     def test_optimizer_succeeds_with_optimizing_rosenbrock_function(self):
         pass
 
+    @pytest.mark.skip(reason="Optimizer only supports sinusoidal cost functions")
     def test_optimizer_succeeds_with_optimizing_sum_of_squares_function(self):
         pass
 
+    @pytest.mark.skip(reason="Optimizer only supports sinusoidal cost functions")
     def test_optimizer_succeeds_on_cost_function_without_gradient(self):
         pass
 
