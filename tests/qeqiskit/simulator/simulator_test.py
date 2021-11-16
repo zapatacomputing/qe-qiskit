@@ -18,7 +18,7 @@ from zquantum.core.measurement import ExpectationValues
 @pytest.fixture(
     params=[
         {
-            "device_name": "qasm_simulator",
+            "device_name": "aer_simulator",
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
         },
     ]
@@ -30,7 +30,7 @@ def backend(request):
 @pytest.fixture(
     params=[
         {
-            "device_name": "statevector_simulator",
+            "device_name": "aer_simulator_statevector",
         },
     ]
 )
@@ -41,10 +41,10 @@ def wf_simulator(request):
 @pytest.fixture(
     params=[
         {
-            "device_name": "qasm_simulator",
+            "device_name": "aer_simulator",
         },
         {
-            "device_name": "statevector_simulator",
+            "device_name": "aer_simulator_statevector",
         },
     ]
 )
@@ -54,7 +54,7 @@ def sampling_simulator(request):
 
 @pytest.fixture(
     params=[
-        {"device_name": "qasm_simulator", "optimization_level": 0},
+        {"device_name": "aer_simulator", "optimization_level": 0},
     ]
 )
 def noisy_simulator(request):
@@ -96,16 +96,16 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             assert all(bitstring == (1, 0, 0) for bitstring in measurements.bitstrings)
 
     def test_setup_basic_simulators(self):
-        simulator = QiskitSimulator("qasm_simulator")
+        simulator = QiskitSimulator("aer_simulator")
         assert isinstance(simulator, QiskitSimulator)
-        assert simulator.device_name == "qasm_simulator"
+        assert simulator.device_name == "aer_simulator"
         assert simulator.noise_model is None
         assert simulator.device_connectivity is None
         assert simulator.basis_gates is None
 
-        simulator = QiskitSimulator("statevector_simulator")
+        simulator = QiskitSimulator("aer_simulator_statevector")
         assert isinstance(simulator, QiskitSimulator)
-        assert simulator.device_name == "statevector_simulator"
+        assert simulator.device_name == "aer_simulator_statevector"
         assert simulator.noise_model is None
         assert simulator.device_connectivity is None
         assert simulator.basis_gates is None
@@ -139,7 +139,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         assert expectation_values_10_gates.values[0] > -1
         assert expectation_values_10_gates.values[0] < 0.0
         assert isinstance(noisy_simulator, QiskitSimulator)
-        assert noisy_simulator.device_name == "qasm_simulator"
+        assert noisy_simulator.device_name == "aer_simulator"
         assert isinstance(noisy_simulator.noise_model, AerNoise.NoiseModel)
         assert noisy_simulator.device_connectivity is not None
         assert noisy_simulator.basis_gates is not None
@@ -167,7 +167,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
             > expectation_values_10_gates.values[0]
         )
         assert isinstance(noisy_simulator, QiskitSimulator)
-        assert noisy_simulator.device_name == "qasm_simulator"
+        assert noisy_simulator.device_name == "aer_simulator"
         assert isinstance(noisy_simulator.noise_model, AerNoise.NoiseModel)
         assert noisy_simulator.device_connectivity is not None
         assert noisy_simulator.basis_gates is not None
@@ -179,7 +179,7 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         )
         n_samples = 8192
         simulator = QiskitSimulator(
-            "qasm_simulator",
+            "aer_simulator",
             noise_model=noise_model,
             device_connectivity=connectivity,
             optimization_level=0,
@@ -213,8 +213,8 @@ class TestQiskitSimulator(QuantumSimulatorTests):
         # Given
         circuit = Circuit([X(0), CNOT(1, 2)])
         n_samples = 100
-        simulator1 = QiskitSimulator("qasm_simulator", seed=643)
-        simulator2 = QiskitSimulator("qasm_simulator", seed=643)
+        simulator1 = QiskitSimulator("aer_simulator", seed=643)
+        simulator2 = QiskitSimulator("aer_simulator", seed=643)
 
         # When
         measurements1 = simulator1.run_circuit_and_measure(circuit, n_samples)
@@ -227,8 +227,8 @@ class TestQiskitSimulator(QuantumSimulatorTests):
     def test_get_wavefunction_seed(self):
         # Given
         circuit = Circuit([X(0), CNOT(1, 2)])
-        simulator1 = QiskitSimulator("statevector_simulator", seed=643)
-        simulator2 = QiskitSimulator("statevector_simulator", seed=643)
+        simulator1 = QiskitSimulator("aer_simulator_statevector", seed=643)
+        simulator2 = QiskitSimulator("aer_simulator_statevector", seed=643)
 
         # When
         wavefunction1 = simulator1.get_wavefunction(circuit)
