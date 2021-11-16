@@ -32,6 +32,12 @@ class QiskitBackend(QuantumBackend):
         """Get a qiskit QPU that adheres to the
         zquantum.core.interfaces.backend.QuantumBackend
 
+        qiskit currently offers 2 types of qasm simulators:
+        1. qasm_simulator - a local simulator that is depreciated.
+        2. IBMQ_qasm_simulator - a remote simulator.
+        All implementation of qasm_simulator have been removed since it's depreciation
+        but IBMQ_qasm_simulator is still tested by this module.
+
         Args:
             device_name: the name of the device
             hub: IBMQ hub
