@@ -9,6 +9,12 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from zquantum.core.circuits import CNOT, Circuit, X
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
 
+# NOTE: qiskit currently offers 2 types of qasm simulators:
+# 1. qasm_simulator - a local simulator that is depreciated.
+# 2. IBMQ_qasm_simulator - a remote simulator.
+# All tests of qasm_simulator have been removed since it's depreciation
+# but IBMQ_qasm_simulator is still tested by this module.
+
 
 @pytest.fixture(
     params=[
