@@ -207,7 +207,7 @@ class TestQiskitBackend(QuantumBackendTests):
         num_circuits = 200
         circuit = self.x_cnot_circuit()
         n_samples = backend.max_shots + 1
-  
+
         # Verify that we are actually going to need multiple batches
         assert (
             num_circuits * math.ceil(n_samples / backend.max_shots) > backend.batch_size
