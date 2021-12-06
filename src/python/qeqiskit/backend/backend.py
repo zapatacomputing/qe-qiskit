@@ -1,6 +1,6 @@
 import math
 import time
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from qeqiskit.conversions import export_to_qiskit
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
@@ -92,7 +92,7 @@ class QiskitBackend(QuantumBackend):
     def transform_circuitset_to_ibmq_experiments(
         self,
         circuitset: List[Circuit],
-        n_samples: List[int],
+        n_samples: Sequence[int],
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
         count exceeds the maximum allowed by the backend.
@@ -244,7 +244,7 @@ class QiskitBackend(QuantumBackend):
     def run_circuitset_and_measure(
         self,
         circuits: List[Circuit],
-        n_samples: List[int],
+        n_samples: Sequence[int],
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
