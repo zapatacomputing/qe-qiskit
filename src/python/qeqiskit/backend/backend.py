@@ -90,9 +90,7 @@ class QiskitBackend(QuantumBackend):
         return self.run_circuitset_and_measure([circuit], [n_samples])[0]
 
     def transform_circuitset_to_ibmq_experiments(
-        self,
-        circuitset: List[Circuit],
-        n_samples: List[int],
+        self, circuitset: List[Circuit], n_samples: List[int],
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
         count exceeds the maximum allowed by the backend.
@@ -117,8 +115,23 @@ class QiskitBackend(QuantumBackend):
             ibmq_circuit = export_to_qiskit(circuit)
             full_qubit_indices = list(range(circuit.n_qubits))
             ibmq_circuit.barrier(full_qubit_indices)
-            ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
-            ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
+            # Add measurements on acitve qubits only;
+            # note: this is dangerous and can result in incorrect expectation values in some cases;
+            # consider e.g. a two-qubit circuit that implements gate for one wire only, but the measurements
+            # generally need to be applied to both wires to be able to handle an arbitrary two-qubit operator
+            active_qubit_indices = set(
+                qubit
+                for operation in circuit.operations
+                for qubit in operation.qubit_indices
+            )
+            active_qubit_indices = sorted(list(active_qubit_indices))
+            n_active_qubits = len(active_qubit_indices)
+            ibmq_circuit.add_register(ClassicalRegister(size=n_active_qubits))
+            ibmq_circuit.measure(
+                list(active_qubit_indices), list(range(n_active_qubits))
+            )
+            # ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
+            # ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
 
             multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
 
@@ -135,9 +148,7 @@ class QiskitBackend(QuantumBackend):
         return ibmq_circuitset, n_samples_for_ibmq_circuits, multiplicities
 
     def batch_experiments(
-        self,
-        experiments: List[QuantumCircuit],
-        n_samples_for_ibmq_circuits: List[int],
+        self, experiments: List[QuantumCircuit], n_samples_for_ibmq_circuits: List[int],
     ) -> Tuple[List[List[QuantumCircuit]], List[int]]:
         """Batch a set of experiments (circuits to be executed) into groups
         whose size is no greater than the maximum allowed by the backend.
@@ -177,10 +188,7 @@ class QiskitBackend(QuantumBackend):
                         n_samples_for_ibmq_circuits[i]
                         for i in range(
                             len(batches) * self.batch_size - self.batch_size,
-                            min(
-                                len(batches) * self.batch_size,
-                                len(experiments),
-                            ),
+                            min(len(batches) * self.batch_size, len(experiments),),
                         )
                     ]
                 )
@@ -242,9 +250,7 @@ class QiskitBackend(QuantumBackend):
         return measurements_set
 
     def run_circuitset_and_measure(
-        self,
-        circuits: List[Circuit],
-        n_samples: List[int],
+        self, circuits: List[Circuit], n_samples: List[int],
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
         Note: the number of bitstrings measured is derived from self.n_samples
