@@ -2,8 +2,8 @@ import math
 import time
 from typing import List, Optional, Tuple
 
-from qeqiskit.conversions import export_to_qiskit
-from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
+from qeqiskit.conversions import export_to_qiskit, import_from_qiskit
+from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, circuit, execute
 from qiskit.ignis.mitigation.measurement import CompleteMeasFitter, complete_meas_cal
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError, IBMQBackendJobLimitError
@@ -218,9 +218,11 @@ class QiskitBackend(QuantumBackend):
             circuit set.
         """
         ibmq_circuit_counts_set = []
+        experiments_with_duplicates = []
         for job, batch in zip(jobs, batches):
             for experiment in batch:
                 ibmq_circuit_counts_set.append(job.result().get_counts(experiment))
+                experiments_with_duplicates.append(experiment)
 
         measurements_set = []
         ibmq_circuit_index = 0
@@ -236,7 +238,21 @@ class QiskitBackend(QuantumBackend):
                 ibmq_circuit_index += 1
 
             if self.readout_correction:
-                combined_counts = self._apply_readout_correction(combined_counts)
+                # Get a set of active qubits
+                circuit = import_from_qiskit(
+                    experiments_with_duplicates[ibmq_circuit_index - 1]
+                )
+                active_qubit_indices = set(
+                    qubit
+                    for operation in circuit.operations
+                    for qubit in operation.qubit_indices
+                )
+                active_qubit_indices = sorted(list(active_qubit_indices))
+                combined_counts = self._apply_readout_correction(
+                    combined_counts,
+                    num_qubits=circuit.n_qubits,
+                    qubit_list=active_qubit_indices,
+                )
 
             # qiskit counts object maps bitstrings in reversed order to ints, so we must
             # flip the bitstrings
@@ -327,12 +343,13 @@ class QiskitBackend(QuantumBackend):
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
                 time.sleep(self.retry_delay_seconds)  # type: ignore
 
-    def _apply_readout_correction(self, counts, qubit_list=None):
+    def _apply_readout_correction(self, counts, num_qubits=None, qubit_list=None):
         if self.readout_correction_filter is None:
 
-            for key in counts.keys():
-                num_qubits = len(key)
-                break
+            if num_qubits is None:
+                for key in counts.keys():
+                    num_qubits = len(key)
+                    break
 
             if qubit_list is None or qubit_list == {}:
                 qubit_list = [i for i in range(num_qubits)]
