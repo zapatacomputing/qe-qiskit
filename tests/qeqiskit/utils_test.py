@@ -5,6 +5,7 @@ import unittest
 
 import numpy as np
 import qiskit.providers.aer.noise as AerNoise
+
 from qeqiskit.noise.basic import (
     create_amplitude_damping_noise,
     get_kraus_matrices_from_ibm_noise_model,
