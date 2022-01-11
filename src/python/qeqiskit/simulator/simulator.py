@@ -171,5 +171,5 @@ class QiskitSimulator(QuantumSimulator):
             seed_simulator=self.seed,
             seed_transpiler=self.seed,
         )
-        wavefunction = job.result().get_statevector(ibmq_circuit, decimals=20)
+        wavefunction = job.result().get_statevector(ibmq_circuit, decimals=20).data
         return flip_amplitudes(wavefunction)
