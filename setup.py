@@ -30,7 +30,8 @@ setuptools.setup(
     setup_requires=["setuptools_scm~=6.0"],
     install_requires=[
         "qiskit==0.28",
-        "qiskit-ibmq-provider==0.15",
+        "qiskit-ibmq-provider>=0.15",
+        "qiskit-terra==0.18.0",
         "symengine~=0.7",
         "numpy~=1.0",
         "z-quantum-core",
