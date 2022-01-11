@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
 import numpy as np
-from qiskit.algorithms.optimizers import ADAM, SPSA
+from qiskit.algorithms.optimizers import ADAM, NFT, SPSA
 from scipy.optimize import OptimizeResult
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.functions import CallableWithGradient
@@ -43,6 +43,8 @@ class QiskitOptimizer(Optimizer):
             if self.method == "AMSGRAD":
                 self.optimizer_kwargs["amsgrad"] = True
             self.optimizer = ADAM(**self.optimizer_kwargs)
+        elif self.method == "NFT":
+            self.optimizer = NFT(**self.optimizer_kwargs)
 
     def _minimize(
         self,
@@ -78,6 +80,8 @@ class QiskitOptimizer(Optimizer):
 
         if self.method == "ADAM" or self.method == "AMSGRAD":
             nit = self.optimizer._t
+        elif self.method == "NFT":
+            nit = self.optimizer._options["maxiter"]
         else:
             nit = self.optimizer.maxiter
 

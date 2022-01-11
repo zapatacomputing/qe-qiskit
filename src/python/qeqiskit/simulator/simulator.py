@@ -108,7 +108,7 @@ class QiskitSimulator(QuantumSimulator):
         if self.device_connectivity is not None:
             coupling_map = CouplingMap(self.device_connectivity.connectivity)
 
-        if self.device_name == "statevector_simulator":
+        if self.device_name == "aer_simulator_statevector":
             wavefunction = self.get_wavefunction(circuit)
             return Measurements(sample_from_wavefunction(wavefunction, n_samples))
         else:
@@ -157,6 +157,9 @@ class QiskitSimulator(QuantumSimulator):
         coupling_map = None
         if self.device_connectivity is not None:
             coupling_map = CouplingMap(self.device_connectivity.connectivity)
+
+        if self.device_name == "aer_simulator_statevector":
+            ibmq_circuit.save_state()
 
         # Execute job to get wavefunction
         job = execute(
