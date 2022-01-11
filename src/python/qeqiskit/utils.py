@@ -24,7 +24,6 @@ def save_qiskit_noise_model(noise_model: AerNoise.NoiseModel, filename: str) -> 
         "schema": SCHEMA_VERSION + "-noise-model",
         "data": noise_model.to_dict(serializable=True),
     }
-
     with open(filename, "w") as f:
         f.write(json.dumps(data, indent=2))
 
@@ -37,7 +36,7 @@ def load_qiskit_noise_model(data: dict) -> AerNoise.NoiseModel:
     Returns:
         (qiskit.providers.aer.noise.NoiseModel): the noise model
     """
-    return AerNoise.NoiseModel.from_dict(data)
+    return AerNoise.NoiseModel.from_dict(data["data"])
 
 
 def save_kraus_operators(kraus: dict, filename: str) -> None:
