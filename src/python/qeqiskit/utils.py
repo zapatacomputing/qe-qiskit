@@ -1,4 +1,5 @@
 import json
+import warnings
 from typing import TextIO
 
 import numpy as np
@@ -37,7 +38,11 @@ def load_qiskit_noise_model(data: dict) -> AerNoise.NoiseModel:
     Returns:
         (qiskit.providers.aer.noise.NoiseModel): the noise model
     """
-    return AerNoise.NoiseModel.from_dict(data)
+    warnings.warn(
+        """This method might give different results depending on
+        your qiskit version and the input."""
+    )
+    return AerNoise.NoiseModel.from_dict(data["data"])
 
 
 def save_kraus_operators(kraus: dict, filename: str) -> None:
