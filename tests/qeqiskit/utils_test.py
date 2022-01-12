@@ -27,10 +27,12 @@ class TestQiskitUtils:
         # Given
         noise_model = AerNoise.NoiseModel()
         coherent_error = np.asarray(
-            [np.exp(-1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-            [0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j],
-            [0.0 + 0.0j, 0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j],
-            [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * 0.5)],
+            [
+                [np.exp(-1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * 0.5)],
+            ]
         )
         noise_model.add_quantum_error(
             AerNoise.coherent_unitary_error(coherent_error), ["cx"], [0, 1]
@@ -64,10 +66,12 @@ class TestQiskitUtils:
         # Given
         noise_model = AerNoise.NoiseModel()
         coherent_error = np.asarray(
-            [np.exp(-1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-            [0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j],
-            [0.0 + 0.0j, 0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j],
-            [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * 0.5)],
+            [
+                [np.exp(-1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, np.exp(1j * 0.5), 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * 0.5)],
+            ]
         )
         noise_model.add_quantum_error(
             AerNoise.coherent_unitary_error(coherent_error), ["cx"], [0, 1]
