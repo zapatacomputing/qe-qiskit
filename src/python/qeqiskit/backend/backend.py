@@ -86,7 +86,8 @@ class QiskitBackend(QuantumBackend):
             circuit: the circuit to prepare the state
             n_samples: The number of samples to collect.
         """
-        assert isinstance(n_samples, int) and n_samples > 0
+        if n_samples <= 0:
+            raise ValueError("n_samples should be greater than 0.")
         return self.run_circuitset_and_measure([circuit], [n_samples])[0]
 
     def transform_circuitset_to_ibmq_experiments(
