@@ -144,13 +144,21 @@ def _make_qiskit_circuit(n_qubits, commands):
 SYMPY_THETA = sympy.Symbol("theta")
 SYMPY_GAMMA = sympy.Symbol("gamma")
 SYMPY_LAMBDA = sympy.Symbol("lambda_")
+SYMPY_PARAMETER_VECTOR = [sympy.Symbol("p[0]"), sympy.Symbol("p[1]")]
 
 QISKIT_THETA = qiskit.circuit.Parameter("theta")
 QISKIT_GAMMA = qiskit.circuit.Parameter("gamma")
 QISKIT_LAMBDA = qiskit.circuit.Parameter("lambda_")
+QISKIT_PARAMETER_VECTOR = qiskit.circuit.ParameterVector("p", 2)
 
 
-EXAMPLE_PARAM_VALUES = {"gamma": 0.3, "theta": -5, "lambda_": np.pi / 5}
+EXAMPLE_PARAM_VALUES = {
+    "gamma": 0.3,
+    "theta": -5,
+    "lambda_": np.pi / 5,
+    "p[0]": -5,
+    "p[1]": 0.3,
+}
 
 
 EQUIVALENT_NON_PARAMETRIZED_CIRCUITS = [
@@ -328,6 +336,22 @@ EQUIVALENT_PARAMETRIZED_CIRCUITS = [
                         [2, 3],
                     ),
                 )
+            ],
+        ),
+    ),
+    (
+        _circuit.Circuit(
+            [
+                _builtin_gates.RX(
+                    SYMPY_PARAMETER_VECTOR[0] * SYMPY_PARAMETER_VECTOR[1]
+                )(1),
+            ],
+            4,
+        ),
+        _make_qiskit_circuit(
+            4,
+            [
+                ("rx", (QISKIT_PARAMETER_VECTOR[0] * QISKIT_PARAMETER_VECTOR[1], 1)),
             ],
         ),
     ),
