@@ -18,6 +18,7 @@ from zquantum.core.interfaces.backend_test import QuantumBackendTests
         {
             "device_name": "ibmq_qasm_simulator",
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
+            "retry_delay_seconds": 1,
         },
     ]
 )
@@ -32,6 +33,7 @@ def backend(request):
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
             "readout_correction": True,
             "n_samples_for_readout_calibration": 1,
+            "retry_delay_seconds": 1,
         },
     ]
 )
@@ -202,12 +204,9 @@ class TestQiskitBackend(QuantumBackendTests):
 
         # Given
         circuit = self.x_cnot_circuit()
-        n_samples = 10
-        num_circuits = (
-            backend_with_readout_correction.batch_size
-            * backend_with_readout_correction.device.job_limit().maximum_jobs
-            + 1
-        )
+        n_samples = 2
+        backend_with_readout_correction.batch_size = 2
+        num_circuits = backend_with_readout_correction.batch_size * 2 + 1
 
         # When
         measurements_set = backend_with_readout_correction.run_circuitset_and_measure(
