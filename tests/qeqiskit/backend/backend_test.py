@@ -1,5 +1,8 @@
 import math
 import os
+import pickle
+from logging import FileHandler
+from time import time
 
 import pytest
 import qiskit
@@ -40,26 +43,27 @@ class TestQiskitBackend(QuantumBackendTests):
     def x_cnot_circuit(self):
         return Circuit([X(0), CNOT(1, 2)])
 
+    def x_circuit(self):
+        return Circuit([X(0)])
+
     def test_transform_circuitset_to_ibmq_experiments(self, backend):
         circuit = self.x_cnot_circuit()
         circuitset = (circuit,) * 2
-        n_samples = [2 * backend.max_shots + 1] * 2
+        n_samples = [backend.max_shots + 1] * 2
 
         (
             experiments,
             n_samples_for_experiments,
             multiplicities,
         ) = backend.transform_circuitset_to_ibmq_experiments(circuitset, n_samples)
-        assert multiplicities == [3, 3]
+        assert multiplicities == [2, 2]
         assert n_samples_for_experiments == [
             backend.max_shots,
-            backend.max_shots,
             1,
-            backend.max_shots,
             backend.max_shots,
             1,
         ]
-        assert len(set([circuit.name for circuit in experiments])) == 6
+        assert len(set([circuit.name for circuit in experiments])) == 4
 
     def test_batch_experiments(self, backend):
         circuit = self.x_cnot_circuit()
@@ -75,6 +79,9 @@ class TestQiskitBackend(QuantumBackendTests):
         assert n_samples_for_batches == [10, 10]
 
     def test_aggregate_measurements(self, backend):
+        """
+        Get pickle file for output of following code
+
         circuit = export_to_qiskit(self.x_cnot_circuit())
         circuit.barrier(range(3))
         circuit.add_register(qiskit.ClassicalRegister(3))
@@ -91,8 +98,15 @@ class TestQiskitBackend(QuantumBackendTests):
             )
             for batch in batches
         ]
+        """
 
-        circuit = self.x_cnot_circuit()
+        FileHandler = open(
+            "tests/qeqiskit/backend/test_aggregate_measurements.pickle", "rb"
+        )
+        jobs = pickle.load(FileHandler)
+        batches = pickle.load(FileHandler)
+        multiplicities = pickle.load(FileHandler)
+
         measurements_set = backend.aggregregate_measurements(
             jobs,
             batches,
@@ -118,7 +132,7 @@ class TestQiskitBackend(QuantumBackendTests):
     def test_run_circuitset_and_measure(self, backend):
         # Given
         num_circuits = 10
-        circuit = self.x_cnot_circuit()
+        circuit = self.x_circuit()
         n_samples = 100
         # When
         measurements_set = backend.run_circuitset_and_measure(
@@ -132,7 +146,7 @@ class TestQiskitBackend(QuantumBackendTests):
             # Then (since SPAM error could result in unexpected bitstrings, we make sure
             # the most common bitstring is the one we expect)
             counts = measurements.get_counts()
-            assert max(counts, key=counts.get) == "100"
+            assert max(counts, key=counts.get) == "1"
 
     def test_execute_with_retries(self, backend):
         # This test has a race condition where the IBMQ server might finish
@@ -141,7 +155,7 @@ class TestQiskitBackend(QuantumBackendTests):
         # We can address in the future by using a mock provider.
 
         # Given
-        circuit = export_to_qiskit(self.x_cnot_circuit())
+        circuit = export_to_qiskit(self.x_circuit())
         n_samples = 10
         num_jobs = backend.device.job_limit().maximum_jobs + 1
 
@@ -158,24 +172,25 @@ class TestQiskitBackend(QuantumBackendTests):
         # Each job has a unique ID
         assert len(set([job.job_id() for job in jobs])) == num_jobs
 
-    @pytest.mark.xfail
-    def test_execute_with_retries_timeout(self, backend):
-        # This test has a race condition where the IBMQ server might finish
-        # executing the first job before the last one is submitted, causing the
-        # test to fail. We can address this in the future using a mock provider.
+    # TODO: determine if this test is needed, as it takes a lot of time
+    # @pytest.mark.xfail
+    # def test_execute_with_retries_timeout(self, backend):
+    #     # This test has a race condition where the IBMQ server might finish
+    #     # executing the first job before the last one is submitted, causing the
+    #     # test to fail. We can address this in the future using a mock provider.
 
-        # Given
-        circuit = export_to_qiskit(self.x_cnot_circuit())
-        n_samples = 10
-        backend.retry_timeout_seconds = 0
-        num_jobs = backend.device.job_limit().maximum_jobs + 1
+    #     # Given
+    #     circuit = export_to_qiskit(self.x_cnot_circuit())
+    #     n_samples = 10
+    #     backend.retry_timeout_seconds = 0
+    #     num_jobs = backend.device.job_limit().maximum_jobs + 1
 
-        # Then
-        with pytest.raises(RuntimeError):
+    #     # Then
+    #     with pytest.raises(RuntimeError):
 
-            # When
-            for _ in range(num_jobs):
-                backend.execute_with_retries([circuit], n_samples)
+    #         # When
+    #         for _ in range(num_jobs):
+    #             backend.execute_with_retries([circuit], n_samples)
 
     def test_run_circuitset_and_measure_readout_correction_retries(
         self, backend_with_readout_correction
@@ -275,7 +290,6 @@ class TestQiskitBackend(QuantumBackendTests):
         # more samples than requested due to the fact that each circuit in a
         # batch must have the same number of measurements.
 
-        # Note: this test may fail with noisy devices
         # Given
         backend.number_of_circuits_run = 0
         backend.number_of_jobs_run = 0
