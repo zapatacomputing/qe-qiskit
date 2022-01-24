@@ -319,26 +319,6 @@ class TestQiskitBackend(QuantumBackendTests):
         assert backend.number_of_circuits_run == 1
         assert backend.number_of_jobs_run == 1
 
-    @pytest.mark.parametrize("n_samples", [1, 2, 10])
-    def test_run_circuit_and_measure_correct_num_measurements_argument(
-        self, backend, n_samples
-    ):
-        # Overriding to reduce number of samples required
-
-        # Given
-        backend.number_of_circuits_run = 0
-        backend.number_of_jobs_run = 0
-        circuit = self.x_cnot_circuit()
-
-        # When
-        measurements = backend.run_circuit_and_measure(circuit, n_samples)
-
-        # Then
-        assert isinstance(measurements, Measurements)
-        assert len(measurements.bitstrings) == n_samples
-        assert backend.number_of_circuits_run == 1
-        assert backend.number_of_jobs_run == 1
-
     def test_run_circuit_and_measure_correct_indexing(self, backend):
         # Overriding to reduce number of samples required
 
