@@ -1,16 +1,14 @@
 import math
 import os
 import pickle
-from logging import FileHandler
-from time import time
 
 import pytest
-import qiskit
 from qeqiskit.backend import QiskitBackend
 from qeqiskit.conversions import export_to_qiskit
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from zquantum.core.circuits import CNOT, Circuit, X
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
+from zquantum.core.measurement import Measurements
 
 
 @pytest.fixture(
@@ -174,25 +172,24 @@ class TestQiskitBackend(QuantumBackendTests):
         # Each job has a unique ID
         assert len(set([job.job_id() for job in jobs])) == num_jobs
 
-    # TODO: determine if this test is needed, as it takes a lot of time
-    # @pytest.mark.xfail
-    # def test_execute_with_retries_timeout(self, backend):
-    #     # This test has a race condition where the IBMQ server might finish
-    #     # executing the first job before the last one is submitted, causing the
-    #     # test to fail. We can address this in the future using a mock provider.
+    @pytest.mark.skip(reason="Test has long runtime and just fails anyway.")
+    def test_execute_with_retries_timeout(self, backend):
+        # This test has a race condition where the IBMQ server might finish
+        # executing the first job before the last one is submitted, causing the
+        # test to fail. We can address this in the future using a mock provider.
 
-    #     # Given
-    #     circuit = export_to_qiskit(self.x_cnot_circuit())
-    #     n_samples = 10
-    #     backend.retry_timeout_seconds = 0
-    #     num_jobs = backend.device.job_limit().maximum_jobs + 1
+        # Given
+        circuit = export_to_qiskit(self.x_cnot_circuit())
+        n_samples = 10
+        backend.retry_timeout_seconds = 0
+        num_jobs = backend.device.job_limit().maximum_jobs + 1
 
-    #     # Then
-    #     with pytest.raises(RuntimeError):
+        # Then
+        with pytest.raises(RuntimeError):
 
-    #         # When
-    #         for _ in range(num_jobs):
-    #             backend.execute_with_retries([circuit], n_samples)
+            # When
+            for _ in range(num_jobs):
+                backend.execute_with_retries([circuit], n_samples)
 
     def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
         # Given
@@ -301,3 +298,21 @@ class TestQiskitBackend(QuantumBackendTests):
         assert len(measurements_set[1].bitstrings) >= n_samples[1]
 
         assert backend.number_of_circuits_run == 2
+
+    @pytest.mark.parametrize("n_samples", [1, 2, 10])
+    def test_run_circuit_and_measure_correct_num_measurements_attribute(
+        self, backend, n_samples
+    ):
+        # Given
+        backend.number_of_circuits_run = 0
+        backend.number_of_jobs_run = 0
+        circuit = self.x_cnot_circuit()
+
+        # When
+        measurements = backend.run_circuit_and_measure(circuit, n_samples)
+
+        # Then
+        assert isinstance(measurements, Measurements)
+        assert len(measurements.bitstrings) == n_samples
+        assert backend.number_of_circuits_run == 1
+        assert backend.number_of_jobs_run == 1
