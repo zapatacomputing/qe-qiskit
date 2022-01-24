@@ -249,7 +249,6 @@ class TestQiskitBackend(QuantumBackendTests):
         ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
         backend = QiskitBackend(
             device_name="ibmq_qasm_simulator",
-            n_samples=1000,
             api_token=ibmq_api_token,
             readout_correction=True,
         )
