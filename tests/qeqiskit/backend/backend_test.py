@@ -194,28 +194,6 @@ class TestQiskitBackend(QuantumBackendTests):
     #         for _ in range(num_jobs):
     #             backend.execute_with_retries([circuit], n_samples)
 
-    def test_run_circuitset_and_measure_readout_correction_retries(
-        self, backend_with_readout_correction
-    ):
-        # This test has a race condition where the IBMQ server might finish
-        # executing the first job before the last one is submitted. The test
-        # will still pass in the case, but will not actually perform a retry.
-        # We can address in the future by using a mock provider.
-
-        # Given
-        circuit = self.x_cnot_circuit()
-        n_samples = 2
-        backend_with_readout_correction.batch_size = 2
-        num_circuits = backend_with_readout_correction.batch_size * 2 + 1
-
-        # When
-        measurements_set = backend_with_readout_correction.run_circuitset_and_measure(
-            [circuit] * num_circuits, [n_samples] * num_circuits
-        )
-
-        # Then
-        assert len(measurements_set) == num_circuits
-
     def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
         # Given
         num_circuits = 2  # Minimum number of circuits to require batching
@@ -244,40 +222,34 @@ class TestQiskitBackend(QuantumBackendTests):
             counts = measurements.get_counts()
             assert max(counts, key=counts.get) == "100"
 
-    def test_readout_correction_works_run_circuit_and_measure(self):
+    def test_readout_correction_works_run_circuit_and_measure(
+        self, backend_with_readout_correction
+    ):
         # Given
-        ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        backend = QiskitBackend(
-            device_name="ibmq_qasm_simulator",
-            api_token=ibmq_api_token,
-            readout_correction=True,
-        )
         circuit = self.x_cnot_circuit()
 
         # When
-        backend.run_circuit_and_measure(circuit, n_samples=1)
+        backend_with_readout_correction.run_circuit_and_measure(circuit, n_samples=1)
 
         # Then
-        assert backend.readout_correction
-        assert backend.readout_correction_filter is not None
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filter is not None
 
-    def test_readout_correction_works_run_circuitset_and_measure(self):
+    def test_readout_correction_works_run_circuitset_and_measure(
+        self, backend_with_readout_correction
+    ):
         # Given
-        ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        backend = QiskitBackend(
-            device_name="ibmq_qasm_simulator",
-            api_token=ibmq_api_token,
-            readout_correction=True,
-            n_samples_for_readout_calibration=1000,
-        )
         circuit = self.x_cnot_circuit()
-        n_samples = 1000
+        n_samples = 10
+
         # When
-        backend.run_circuitset_and_measure([circuit] * 10, [n_samples] * 10)
+        backend_with_readout_correction.run_circuitset_and_measure(
+            [circuit] * 2, [n_samples] * 2
+        )
 
         # Then
-        assert backend.readout_correction
-        assert backend.readout_correction_filter is not None
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filter is not None
 
     def test_device_that_does_not_exist(self):
         # Given/When/Then
