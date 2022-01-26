@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from qeqiskit.optimizer import QiskitOptimizer
 from zquantum.core.gradients import finite_differences_gradient
+from zquantum.core.history.recorder import recorder
 from zquantum.core.interfaces.functions import FunctionWithGradient
 from zquantum.core.interfaces.optimizer_test import (
     MANDATORY_OPTIMIZATION_RESULT_FIELDS,
@@ -111,3 +112,27 @@ class TestQiskitSinusoidalOptimizerTests(OptimizerTests):
 
         assert "history" in results or not keep_history
         assert "gradient_history" in results or not keep_history
+
+    def test_optimizer_records_history_if_keep_history_is_true(
+        self, optimizer, sum_x_squared
+    ):
+
+        # Overwriting to simplify initial conditions and accelerate test.
+
+        cost_function = recorder(sum_x_squared)
+
+        result = optimizer.minimize(cost_function, np.array([-1, 1]), keep_history=True)
+
+        for result_history_entry, cost_function_history_entry in zip(
+            result.history, cost_function.history
+        ):
+            assert (
+                result_history_entry.call_number
+                == cost_function_history_entry.call_number
+            )
+            assert np.allclose(
+                result_history_entry.params, cost_function_history_entry.params
+            )
+            assert np.isclose(
+                result_history_entry.value, cost_function_history_entry.value
+            )
