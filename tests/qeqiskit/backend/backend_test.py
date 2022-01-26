@@ -1,8 +1,8 @@
 import math
 import os
-import pickle
 
 import pytest
+import qiskit
 from qeqiskit.backend import QiskitBackend
 from qeqiskit.conversions import export_to_qiskit
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
