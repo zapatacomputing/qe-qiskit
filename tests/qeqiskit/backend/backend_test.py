@@ -79,8 +79,8 @@ class TestQiskitBackend(QuantumBackendTests):
         assert n_samples_for_batches == [10, 10]
 
     def test_aggregate_measurements(self, backend):
-        """
-        Get pickle file for output of following code
+
+        multiplicities = [3, 1]
 
         circuit = export_to_qiskit(self.x_cnot_circuit())
         circuit.barrier(range(3))
@@ -90,7 +90,7 @@ class TestQiskitBackend(QuantumBackendTests):
             [circuit.copy("circuit1"), circuit.copy("circuit2")],
             [circuit.copy("circuit3"), circuit.copy("circuit4")],
         ]
-        multiplicities = [3, 1]
+
         jobs = [
             backend.execute_with_retries(
                 batch,
@@ -98,14 +98,6 @@ class TestQiskitBackend(QuantumBackendTests):
             )
             for batch in batches
         ]
-        """
-
-        FileHandler = open(
-            "tests/qeqiskit/backend/test_aggregate_measurements.pickle", "rb"
-        )
-        jobs = pickle.load(FileHandler)
-        batches = pickle.load(FileHandler)
-        multiplicities = pickle.load(FileHandler)
 
         measurements_set = backend.aggregregate_measurements(
             jobs,
