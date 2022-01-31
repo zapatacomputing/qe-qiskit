@@ -135,8 +135,6 @@ class TestQiskitBackend(QuantumBackendTests):
         for measurements in measurements_set:
             assert len(measurements.bitstrings) == n_samples
 
-            # Then (since SPAM error could result in unexpected bitstrings, we make sure
-            # the most common bitstring is the one we expect)
             counts = measurements.get_counts()
             assert max(counts, key=counts.get) == "1"
 
@@ -181,6 +179,32 @@ class TestQiskitBackend(QuantumBackendTests):
             # When
             for _ in range(num_jobs):
                 backend.execute_with_retries([circuit], n_samples)
+
+    @pytest.mark.skip(reason="test will always succeed.")
+    def test_run_circuitset_and_measure_readout_correction_retries(
+        self, backend_with_readout_correction
+    ):
+        # This test has a race condition where the IBMQ server might finish
+        # executing the first job before the last one is submitted. The test
+        # will still pass in the case, but will not actually perform a retry.
+        # We can address in the future by using a mock provider.
+
+        # Given
+        circuit = self.x_cnot_circuit()
+        n_samples = 10
+        num_circuits = (
+            backend_with_readout_correction.batch_size
+            * backend_with_readout_correction.device.job_limit().maximum_jobs
+            + 1
+        )
+
+        # When
+        measurements_set = backend_with_readout_correction.run_circuitset_and_measure(
+            [circuit] * num_circuits, [n_samples] * num_circuits
+        )
+
+        # Then
+        assert len(measurements_set) == num_circuits
 
     def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
         # Given
@@ -278,8 +302,6 @@ class TestQiskitBackend(QuantumBackendTests):
             [first_circuit, second_circuit], n_samples
         )
 
-        # Then (since SPAM error could result in unexpected bitstrings, we make sure the
-        # most common bitstring is the one we expect)
         counts = measurements_set[0].get_counts()
         assert max(counts, key=counts.get) == "001"
         counts = measurements_set[1].get_counts()
