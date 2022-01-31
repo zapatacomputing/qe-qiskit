@@ -2,6 +2,8 @@ import warnings
 
 import setuptools
 
+zip_safe = False
+
 try:
     from subtrees.z_quantum_actions.setup_extras import extras
 except ImportError:
@@ -36,4 +38,5 @@ setuptools.setup(
         "z-quantum-core",
     ],
     extras_require=extras,
+    package_data={"src/python": ["py.typed"]},
 )

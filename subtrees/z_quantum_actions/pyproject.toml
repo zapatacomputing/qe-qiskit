@@ -9,7 +9,7 @@ requires = ["setuptools", "wheel",  "setuptools_scm>=6.0", "pygit2"]
 profile = "black"
 
 [tool.mypy]
-ignore_missing_imports = true
+ignore_missing_imports = false
 namespace_packages = true
 
 [tool.coverage.run]
