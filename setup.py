@@ -1,8 +1,11 @@
+import site
+import sys
 import warnings
 
 import setuptools
 
-zip_safe = False
+# Workaound for https://github.com/pypa/pip/issues/7953
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 try:
     from subtrees.z_quantum_actions.setup_extras import extras
@@ -39,4 +42,5 @@ setuptools.setup(
     ],
     extras_require=extras,
     package_data={"src/python": ["py.typed"]},
+    zip_safe=False,
 )

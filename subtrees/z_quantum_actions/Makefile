@@ -52,7 +52,7 @@ flake8-default: clean
 
 mypy-default: clean
 	@echo scanning files with mypy: Please be patient....
-	@mypy --ignore-missing-imports --namespace-packages src
+	@mypy --namespace-packages src
 
 black-default: clean
 	@black --check src tests

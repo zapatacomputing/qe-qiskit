@@ -66,7 +66,7 @@ class QiskitBackend(QuantumBackend):
         provider = IBMQ.get_provider(hub=hub, group=group, project=project)
         self.device = provider.get_backend(name=self.device_name)
         self.max_shots = self.device.configuration().max_shots
-        self.batch_size = self.device.configuration().max_experiments
+        self.batch_size: int = self.device.configuration().max_experiments
         self.supports_batching = True
         self.readout_correction = readout_correction
         self.readout_correction_filter = None
@@ -92,7 +92,7 @@ class QiskitBackend(QuantumBackend):
 
     def transform_circuitset_to_ibmq_experiments(
         self,
-        circuitset: List[Circuit],
+        circuitset: Sequence[Circuit],
         n_samples: Sequence[int],
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
@@ -244,7 +244,7 @@ class QiskitBackend(QuantumBackend):
 
     def run_circuitset_and_measure(
         self,
-        circuits: List[Circuit],
+        circuits: Sequence[Circuit],
         n_samples: Sequence[int],
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.

@@ -1,6 +1,16 @@
 [build-system]
 requires = ["setuptools", "wheel",  "setuptools_scm>=6.0", "pygit2"]
 
+[[tool.mypy.overrides]]
+module = [
+    'qiskit.*',
+    'openfermion.*',
+    'scipy.optimize',
+    'sympy.*',
+    'symengine.*',
+]
+ignore_missing_imports = true
+
 # Including this section is same as 'use_scm_version=True' in setup.py
 # See https://github.com/pypa/setuptools_scm for guidance
 [tool.setuptools_scm]
