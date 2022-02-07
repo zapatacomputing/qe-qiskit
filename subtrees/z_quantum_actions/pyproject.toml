@@ -37,10 +37,3 @@ exclude_lines = [
 
 [tool.pytest.ini_options]
 log_level="INFO"
-<<<<<<< HEAD
-markers = [
-   "unit: Unit Tests",
-   "integration: Integration Tests",
-]
-=======
->>>>>>> ace92ce39dded340e34ef00f62a74713c8f559b3
