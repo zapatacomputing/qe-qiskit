@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 from qiskit.algorithms.optimizers import ADAM, NFT, SPSA
@@ -48,7 +48,7 @@ class QiskitOptimizer(Optimizer):
 
     def _minimize(
         self,
-        cost_function: CallableWithGradient,
+        cost_function: Union[CallableWithGradient, Callable],
         initial_params: np.ndarray,
         keep_history: bool = False,
     ) -> OptimizeResult:
@@ -69,7 +69,7 @@ class QiskitOptimizer(Optimizer):
         if hasattr(cost_function, "gradient") and callable(
             getattr(cost_function, "gradient")
         ):
-            gradient_function = cost_function.gradient
+            gradient_function = cost_function.gradient  # type: ignore
 
         solution, value, nfev = self.optimizer.optimize(
             num_vars=number_of_variables,
@@ -90,5 +90,5 @@ class QiskitOptimizer(Optimizer):
             opt_params=solution,
             nit=nit,
             nfev=nfev,
-            **construct_history_info(cost_function, keep_history)
+            **construct_history_info(cost_function, keep_history)  # type: ignore
         )
