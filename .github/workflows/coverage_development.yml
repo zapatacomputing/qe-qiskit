@@ -38,10 +38,6 @@ jobs:
           path: z-quantum-core
           ref: dev
 
-      - name: Install z-quantum-core
-        run: |
-          python3 -m pip install --user ./z-quantum-core
-
       - uses: ./subtrees/z_quantum_actions/actions/coverage
         with:
           codecov_secret: ${{ secrets.CODECOV_TOKEN }}
