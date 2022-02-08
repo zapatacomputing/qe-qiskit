@@ -31,6 +31,29 @@ def optimizer(request):
     return QiskitOptimizer(**request.param)
 
 
+# A fast, inaccurate optimizer used when resulting values aren't being tested
+@pytest.fixture(
+    params=[
+        {
+            "method": "ADAM",
+            "optimizer_kwargs": {
+                "maxiter": int(5),
+            },
+        },
+        {
+            "method": "SPSA",
+            "optimizer_kwargs": {"maxiter": int(5)},
+        },
+        {
+            "method": "AMSGRAD",
+            "optimizer_kwargs": {"maxiter": 5},
+        },
+    ]
+)
+def low_iter_optimizer(request):
+    return QiskitOptimizer(**request.param)
+
+
 @pytest.fixture(
     params=[
         {
@@ -40,6 +63,18 @@ def optimizer(request):
     ]
 )
 def sinusoidal_optimizer(request):
+    return QiskitOptimizer(**request.param)
+
+
+@pytest.fixture(
+    params=[
+        {
+            "method": "NFT",
+            "optimizer_kwargs": {"maxiter": 5},
+        },
+    ]
+)
+def low_iter_sinusoidal_optimizer(request):
     return QiskitOptimizer(**request.param)
 
 
@@ -63,6 +98,27 @@ class TestQiskitOptimizerTests(OptimizerTests):
         assert "opt_value" in results
         assert "opt_params" in results
         assert "history" in results
+
+    def test_optimizer_records_history_if_keep_history_is_true(
+        self, low_iter_optimizer, sum_x_squared
+    ):
+        super().test_optimizer_records_history_if_keep_history_is_true(
+            low_iter_optimizer, sum_x_squared
+        )
+
+    def test_optimizer_does_not_record_history_if_keep_history_is_set_to_false(
+        self, low_iter_optimizer, sum_x_squared
+    ):
+        super().test_optimizer_does_not_record_history_if_keep_history_is_set_to_false(
+            low_iter_optimizer, sum_x_squared
+        )
+
+    def test_optimizer_does_not_record_history_by_default(
+        self, low_iter_optimizer, sum_x_squared
+    ):
+        super().test_optimizer_does_not_record_history_by_default(
+            low_iter_optimizer, sum_x_squared
+        )
 
 
 class TestQiskitSinusoidalOptimizerTests(OptimizerTests):
@@ -114,25 +170,22 @@ class TestQiskitSinusoidalOptimizerTests(OptimizerTests):
         assert "gradient_history" in results or not keep_history
 
     def test_optimizer_records_history_if_keep_history_is_true(
-        self, optimizer, sum_x_squared
+        self, low_iter_sinusoidal_optimizer, sum_x_squared
     ):
+        super().test_optimizer_records_history_if_keep_history_is_true(
+            low_iter_sinusoidal_optimizer, sum_x_squared
+        )
 
-        # Overwriting to simplify initial conditions and accelerate test.
+    def test_optimizer_does_not_record_history_if_keep_history_is_set_to_false(
+        self, low_iter_sinusoidal_optimizer, sum_x_squared
+    ):
+        super().test_optimizer_does_not_record_history_if_keep_history_is_set_to_false(
+            low_iter_sinusoidal_optimizer, sum_x_squared
+        )
 
-        cost_function = recorder(sum_x_squared)
-
-        result = optimizer.minimize(cost_function, np.array([-1, 1]), keep_history=True)
-
-        for result_history_entry, cost_function_history_entry in zip(
-            result.history, cost_function.history
-        ):
-            assert (
-                result_history_entry.call_number
-                == cost_function_history_entry.call_number
-            )
-            assert np.allclose(
-                result_history_entry.params, cost_function_history_entry.params
-            )
-            assert np.isclose(
-                result_history_entry.value, cost_function_history_entry.value
-            )
+    def test_optimizer_does_not_record_history_by_default(
+        self, low_iter_sinusoidal_optimizer, sum_x_squared
+    ):
+        super().test_optimizer_does_not_record_history_by_default(
+            low_iter_sinusoidal_optimizer, sum_x_squared
+        )
