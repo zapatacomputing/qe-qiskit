@@ -41,6 +41,7 @@ setuptools.setup(
         "z-quantum-core",
     ],
     extras_require=extras,
+    package_data={"src/python": ["py.typed"]},
     include_package_date=True,
     zip_safe=False,
 )
