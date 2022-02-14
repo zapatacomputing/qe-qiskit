@@ -41,6 +41,6 @@ setuptools.setup(
         "z-quantum-core",
     ],
     extras_require=extras,
-    include_package_date=True,
+    include_package_data=True,
     zip_safe=False,
 )
