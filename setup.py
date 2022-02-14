@@ -1,6 +1,11 @@
+import site
+import sys
 import warnings
 
 import setuptools
+
+# Workaound for https://github.com/pypa/pip/issues/7953
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 try:
     from subtrees.z_quantum_actions.setup_extras import extras
@@ -36,4 +41,6 @@ setuptools.setup(
         "z-quantum-core",
     ],
     extras_require=extras,
+    include_package_data=True,
+    zip_safe=False,
 )

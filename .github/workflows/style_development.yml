@@ -34,10 +34,5 @@ jobs:
           path: z-quantum-core
           ref: dev
 
-      - name: Install z-quantum-core
-        run: |
-          python3 -m pip install --user ./z-quantum-core
-
-
       # Pull in the style includes
       - uses: ./subtrees/z_quantum_actions/actions/style

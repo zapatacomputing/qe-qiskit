@@ -8,6 +8,7 @@ from qeqiskit.conversions import export_to_qiskit
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from zquantum.core.circuits import CNOT, Circuit, X
 from zquantum.core.interfaces.backend_test import QuantumBackendTests
+from zquantum.core.measurement import Measurements
 
 
 @pytest.fixture(
@@ -15,6 +16,7 @@ from zquantum.core.interfaces.backend_test import QuantumBackendTests
         {
             "device_name": "ibmq_qasm_simulator",
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
+            "retry_delay_seconds": 1,
         },
     ]
 )
@@ -29,6 +31,7 @@ def backend(request):
             "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
             "readout_correction": True,
             "n_samples_for_readout_calibration": 1,
+            "retry_delay_seconds": 1,
         },
     ]
 )
@@ -40,26 +43,27 @@ class TestQiskitBackend(QuantumBackendTests):
     def x_cnot_circuit(self):
         return Circuit([X(0), CNOT(1, 2)])
 
+    def x_circuit(self):
+        return Circuit([X(0)])
+
     def test_transform_circuitset_to_ibmq_experiments(self, backend):
         circuit = self.x_cnot_circuit()
         circuitset = (circuit,) * 2
-        n_samples = [2 * backend.max_shots + 1] * 2
+        n_samples = [backend.max_shots + 1] * 2
 
         (
             experiments,
             n_samples_for_experiments,
             multiplicities,
         ) = backend.transform_circuitset_to_ibmq_experiments(circuitset, n_samples)
-        assert multiplicities == [3, 3]
+        assert multiplicities == [2, 2]
         assert n_samples_for_experiments == [
             backend.max_shots,
-            backend.max_shots,
             1,
-            backend.max_shots,
             backend.max_shots,
             1,
         ]
-        assert len(set([circuit.name for circuit in experiments])) == 6
+        assert len(set([circuit.name for circuit in experiments])) == 4
 
     def test_batch_experiments(self, backend):
         circuit = self.x_cnot_circuit()
@@ -75,6 +79,9 @@ class TestQiskitBackend(QuantumBackendTests):
         assert n_samples_for_batches == [10, 10]
 
     def test_aggregate_measurements(self, backend):
+
+        multiplicities = [3, 1]
+
         circuit = export_to_qiskit(self.x_cnot_circuit())
         circuit.barrier(range(3))
         circuit.add_register(qiskit.ClassicalRegister(3))
@@ -83,7 +90,7 @@ class TestQiskitBackend(QuantumBackendTests):
             [circuit.copy("circuit1"), circuit.copy("circuit2")],
             [circuit.copy("circuit3"), circuit.copy("circuit4")],
         ]
-        multiplicities = [3, 1]
+
         jobs = [
             backend.execute_with_retries(
                 batch,
@@ -92,7 +99,6 @@ class TestQiskitBackend(QuantumBackendTests):
             for batch in batches
         ]
 
-        circuit = self.x_cnot_circuit()
         measurements_set = backend.aggregregate_measurements(
             jobs,
             batches,
@@ -118,7 +124,7 @@ class TestQiskitBackend(QuantumBackendTests):
     def test_run_circuitset_and_measure(self, backend):
         # Given
         num_circuits = 10
-        circuit = self.x_cnot_circuit()
+        circuit = self.x_circuit()
         n_samples = 100
         # When
         measurements_set = backend.run_circuitset_and_measure(
@@ -129,10 +135,8 @@ class TestQiskitBackend(QuantumBackendTests):
         for measurements in measurements_set:
             assert len(measurements.bitstrings) == n_samples
 
-            # Then (since SPAM error could result in unexpected bitstrings, we make sure
-            # the most common bitstring is the one we expect)
             counts = measurements.get_counts()
-            assert max(counts, key=counts.get) == "100"
+            assert max(counts, key=counts.get) == "1"
 
     def test_execute_with_retries(self, backend):
         # This test has a race condition where the IBMQ server might finish
@@ -141,7 +145,7 @@ class TestQiskitBackend(QuantumBackendTests):
         # We can address in the future by using a mock provider.
 
         # Given
-        circuit = export_to_qiskit(self.x_cnot_circuit())
+        circuit = export_to_qiskit(self.x_circuit())
         n_samples = 10
         num_jobs = backend.device.job_limit().maximum_jobs + 1
 
@@ -158,7 +162,6 @@ class TestQiskitBackend(QuantumBackendTests):
         # Each job has a unique ID
         assert len(set([job.job_id() for job in jobs])) == num_jobs
 
-    @pytest.mark.xfail
     def test_execute_with_retries_timeout(self, backend):
         # This test has a race condition where the IBMQ server might finish
         # executing the first job before the last one is submitted, causing the
@@ -177,6 +180,7 @@ class TestQiskitBackend(QuantumBackendTests):
             for _ in range(num_jobs):
                 backend.execute_with_retries([circuit], n_samples)
 
+    @pytest.mark.skip(reason="test will always succeed.")
     def test_run_circuitset_and_measure_readout_correction_retries(
         self, backend_with_readout_correction
     ):
@@ -204,9 +208,10 @@ class TestQiskitBackend(QuantumBackendTests):
 
     def test_run_circuitset_and_measure_split_circuits_and_jobs(self, backend):
         # Given
-        num_circuits = 200
+        num_circuits = 2  # Minimum number of circuits to require batching
         circuit = self.x_cnot_circuit()
         n_samples = backend.max_shots + 1
+        backend.batch_size = 2
 
         # Verify that we are actually going to need multiple batches
         assert (
@@ -229,41 +234,34 @@ class TestQiskitBackend(QuantumBackendTests):
             counts = measurements.get_counts()
             assert max(counts, key=counts.get) == "100"
 
-    def test_readout_correction_works_run_circuit_and_measure(self):
+    def test_readout_correction_works_run_circuit_and_measure(
+        self, backend_with_readout_correction
+    ):
         # Given
-        ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        backend = QiskitBackend(
-            device_name="ibmq_qasm_simulator",
-            n_samples=1000,
-            api_token=ibmq_api_token,
-            readout_correction=True,
-        )
         circuit = self.x_cnot_circuit()
 
         # When
-        backend.run_circuit_and_measure(circuit, n_samples=1)
+        backend_with_readout_correction.run_circuit_and_measure(circuit, n_samples=1)
 
         # Then
-        assert backend.readout_correction
-        assert backend.readout_correction_filter is not None
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filter is not None
 
-    def test_readout_correction_works_run_circuitset_and_measure(self):
+    def test_readout_correction_works_run_circuitset_and_measure(
+        self, backend_with_readout_correction
+    ):
         # Given
-        ibmq_api_token = os.getenv("ZAPATA_IBMQ_API_TOKEN")
-        backend = QiskitBackend(
-            device_name="ibmq_qasm_simulator",
-            api_token=ibmq_api_token,
-            readout_correction=True,
-            n_samples_for_readout_calibration=1000,
-        )
         circuit = self.x_cnot_circuit()
-        n_samples = 1000
+        n_samples = 10
+
         # When
-        backend.run_circuitset_and_measure([circuit] * 10, [n_samples] * 10)
+        backend_with_readout_correction.run_circuitset_and_measure(
+            [circuit] * 2, [n_samples] * 2
+        )
 
         # Then
-        assert backend.readout_correction
-        assert backend.readout_correction_filter is not None
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filter is not None
 
     def test_device_that_does_not_exist(self):
         # Given/When/Then
@@ -275,7 +273,6 @@ class TestQiskitBackend(QuantumBackendTests):
         # more samples than requested due to the fact that each circuit in a
         # batch must have the same number of measurements.
 
-        # Note: this test may fail with noisy devices
         # Given
         backend.number_of_circuits_run = 0
         backend.number_of_jobs_run = 0
@@ -298,15 +295,13 @@ class TestQiskitBackend(QuantumBackendTests):
             ]
         )
 
-        n_samples = [100, 105]
+        n_samples = [2, 3]
 
         # When
         measurements_set = backend.run_circuitset_and_measure(
             [first_circuit, second_circuit], n_samples
         )
 
-        # Then (since SPAM error could result in unexpected bitstrings, we make sure the
-        # most common bitstring is the one we expect)
         counts = measurements_set[0].get_counts()
         assert max(counts, key=counts.get) == "001"
         counts = measurements_set[1].get_counts()
@@ -316,3 +311,38 @@ class TestQiskitBackend(QuantumBackendTests):
         assert len(measurements_set[1].bitstrings) >= n_samples[1]
 
         assert backend.number_of_circuits_run == 2
+
+    @pytest.mark.parametrize("n_samples", [1, 2, 10])
+    def test_run_circuit_and_measure_correct_num_measurements_attribute(
+        self, backend, n_samples
+    ):
+        # Overriding to reduce number of samples required
+
+        # Given
+        backend.number_of_circuits_run = 0
+        backend.number_of_jobs_run = 0
+        circuit = self.x_cnot_circuit()
+
+        # When
+        measurements = backend.run_circuit_and_measure(circuit, n_samples)
+
+        # Then
+        assert isinstance(measurements, Measurements)
+        assert len(measurements.bitstrings) == n_samples
+        assert backend.number_of_circuits_run == 1
+        assert backend.number_of_jobs_run == 1
+
+    def test_run_circuit_and_measure_correct_indexing(self, backend):
+        # Overriding to reduce number of samples required
+
+        # Given
+        backend.number_of_circuits_run = 0
+        backend.number_of_jobs_run = 0
+        circuit = self.x_cnot_circuit()
+        n_samples = 2  # qiskit only runs simulators, so we can use low n_samples
+        measurements = backend.run_circuit_and_measure(circuit, n_samples)
+
+        counts = measurements.get_counts()
+        assert max(counts, key=counts.get) == "100"
+        assert backend.number_of_circuits_run == 1
+        assert backend.number_of_jobs_run == 1

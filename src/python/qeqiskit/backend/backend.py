@@ -66,7 +66,7 @@ class QiskitBackend(QuantumBackend):
         provider = IBMQ.get_provider(hub=hub, group=group, project=project)
         self.device = provider.get_backend(name=self.device_name)
         self.max_shots = self.device.configuration().max_shots
-        self.batch_size = self.device.configuration().max_experiments
+        self.batch_size: int = self.device.configuration().max_experiments
         self.supports_batching = True
         self.readout_correction = readout_correction
         self.readout_correction_filter = None
@@ -79,8 +79,7 @@ class QiskitBackend(QuantumBackend):
         self.n_samples_for_readout_calibration = n_samples_for_readout_calibration
 
     def run_circuit_and_measure(self, circuit: Circuit, n_samples: int) -> Measurements:
-        """Run a circuit and measure a certain number of bitstrings. Note: the
-        number of bitstrings measured is derived from self.n_samples
+        """Run a circuit and measure a certain number of bitstrings.
 
         Args:
             circuit: the circuit to prepare the state
@@ -92,7 +91,7 @@ class QiskitBackend(QuantumBackend):
 
     def transform_circuitset_to_ibmq_experiments(
         self,
-        circuitset: List[Circuit],
+        circuitset: Sequence[Circuit],
         n_samples: Sequence[int],
     ) -> Tuple[List[QuantumCircuit], List[int], List[int]]:
         """Convert circuits to qiskit and duplicate those whose measurement
@@ -244,16 +243,14 @@ class QiskitBackend(QuantumBackend):
 
     def run_circuitset_and_measure(
         self,
-        circuits: List[Circuit],
+        circuits: Sequence[Circuit],
         n_samples: Sequence[int],
     ) -> List[Measurements]:
         """Run a set of circuits and measure a certain number of bitstrings.
-        Note: the number of bitstrings measured is derived from self.n_samples
 
         Args:
             circuitset: the circuits to run
-            n_samples: The number of shots to perform on each circuit. If
-                None, then self.n_samples shots are performed for each circuit.
+            n_samples: The number of shots to perform on each circuit.
 
         Returns:
             A list of Measurements objects containing the observed bitstrings.
