@@ -66,10 +66,8 @@ class QiskitOptimizer(Optimizer):
         number_of_variables = len(initial_params)
 
         gradient_function = None
-        if hasattr(cost_function, "gradient") and callable(
-            getattr(cost_function, "gradient")
-        ):
-            gradient_function = cost_function.gradient  # type: ignore
+        if isinstance(cost_function, CallableWithGradient):
+            gradient_function = cost_function.gradient
 
         solution, value, nfev = self.optimizer.optimize(
             num_vars=number_of_variables,
@@ -90,5 +88,5 @@ class QiskitOptimizer(Optimizer):
             opt_params=solution,
             nit=nit,
             nfev=nfev,
-            **construct_history_info(cost_function, keep_history)  # type: ignore
+            **construct_history_info(cost_function, keep_history)
         )
