@@ -264,7 +264,7 @@ def _import_qiskit_triplet(qiskit_triplet: QiskitOperation) -> ImportedOperation
     return _import_qiskit_op(qiskit_op, qiskit_qubits)
 
 
-def _import_qiskit_op(qiskit_op, qiskit_qubits) -> ImportedOperation:
+def _import_qiskit_op(qiskit_op, qiskit_qubits) -> Union[ImportedOperation, bool]:
     # We always wanna try importing via mapping to handle complex gate structures
     # represented by a single class, like CNOT (Control + X) or CSwap (Control + Swap).
     try:
@@ -277,7 +277,10 @@ def _import_qiskit_op(qiskit_op, qiskit_qubits) -> ImportedOperation:
     except ValueError:
         pass
 
-    return _import_custom_qiskit_gate(qiskit_op, qiskit_qubits)
+    try:
+        return _import_custom_qiskit_gate(qiskit_op, qiskit_qubits)
+    except AttributeError:
+        raise ValueError(f"Conversion of {qiskit_op.name} from Qiskit is unsupported.")
 
 
 def _import_qiskit_op_via_mapping(
