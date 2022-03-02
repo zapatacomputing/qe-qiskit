@@ -13,7 +13,7 @@ from zquantum.core.circuits.symbolic.translations import translate_expression
 
 from ._qiskit_expressions import QISKIT_DIALECT, expression_from_qiskit
 
-QiskitOperation = Tuple[
+QiskitTriplet = Tuple[
     qiskit.circuit.Instruction, List[qiskit.circuit.Qubit], List[qiskit.circuit.Clbit]
 ]
 
@@ -258,13 +258,13 @@ def import_from_qiskit(circuit: qiskit.QuantumCircuit) -> _circuit.Circuit:
     )
 
 
-def _import_qiskit_triplet(qiskit_triplet: QiskitOperation) -> ImportedOperation:
+def _import_qiskit_triplet(qiskit_triplet: QiskitTriplet) -> ImportedOperation:
     qiskit_op, qiskit_qubits, _ = qiskit_triplet
 
     return _import_qiskit_op(qiskit_op, qiskit_qubits)
 
 
-def _import_qiskit_op(qiskit_op, qiskit_qubits) -> Union[ImportedOperation, bool]:
+def _import_qiskit_op(qiskit_op, qiskit_qubits) -> ImportedOperation:
     # We always wanna try importing via mapping to handle complex gate structures
     # represented by a single class, like CNOT (Control + X) or CSwap (Control + Swap).
     try:
@@ -334,7 +334,7 @@ def _custom_qiskit_gate_name(gate_label: str, gate_name: str, matrix: np.ndarray
 
 
 def _import_custom_qiskit_gate(
-    qiskit_op: qiskit.circuit.Gate, qiskit_qubits
+    qiskit_op: qiskit.circuit.Gate, qiskit_qubits: Iterable[qiskit.circuit.Qubit]
 ) -> AnonGateOperation:
     value_matrix = qiskit_op.to_matrix()
     return AnonGateOperation(
