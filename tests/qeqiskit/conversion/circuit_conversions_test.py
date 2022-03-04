@@ -133,8 +133,8 @@ class TestCU3GateConversion:
 # https://qiskit.org/documentation/tutorials/circuits/1_getting_started_with_qiskit.html#Visualize-Circuit
 
 
-def _make_qiskit_circuit(n_qubits, commands):
-    qc = qiskit.QuantumCircuit(n_qubits)
+def _make_qiskit_circuit(n_qubits, commands, n_cbits=0):
+    qc = qiskit.QuantumCircuit(n_qubits, n_cbits)
     for method_name, method_args in commands:
         method = getattr(qc, method_name)
         method(*method_args)
@@ -428,6 +428,11 @@ EQUIVALENT_CUSTOM_GATE_CIRCUITS = [
     ),
 ]
 
+UNSUPPORTED_CIRCUITS = [
+    _make_qiskit_circuit(1, [("measure", (0, 0))], n_cbits=1),
+    _make_qiskit_circuit(1, [("break_loop", ())]),
+]
+
 
 def _draw_qiskit_circuit(circuit):
     return qiskit.visualization.circuit_drawer(circuit, output="text")
@@ -609,3 +614,8 @@ class TestImportingFromQiskit:
     ):
         imported = import_from_qiskit(qiskit_circuit)
         assert imported == zquantum_circuit
+
+    @pytest.mark.parametrize("unsupported_circuit", UNSUPPORTED_CIRCUITS)
+    def test_operation_not_implemented(self, unsupported_circuit):
+        with pytest.raises(ValueError):
+            import_from_qiskit(unsupported_circuit)
