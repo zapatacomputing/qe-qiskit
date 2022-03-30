@@ -72,7 +72,7 @@ class TestIntegerPower:
 
     @pytest.mark.parametrize(
         "base, exponent, expected_result",
-        [(2.5, 3, 2.5 ** 3), (THETA, 2, THETA * THETA)],
+        [(2.5, 3, 2.5**3), (THETA, 2, THETA * THETA)],
     )
     def test_with_positive_exponent_is_converted_to_repeated_multiplication(
         self, base, exponent, expected_result
@@ -85,7 +85,7 @@ class TestIntegerPower:
 
     @pytest.mark.parametrize(
         "base, exponent, expected_result",
-        [(2.0, -4, 0.5 ** 4), (THETA, -3, (1 / THETA) * (1 / THETA) * (1 / THETA))],
+        [(2.0, -4, 0.5**4), (THETA, -3, (1 / THETA) * (1 / THETA) * (1 / THETA))],
     )
     def test_with_neg_exponent_is_converted_to_repeated_multiplication_of_reciprocals(
         self, base, exponent, expected_result
