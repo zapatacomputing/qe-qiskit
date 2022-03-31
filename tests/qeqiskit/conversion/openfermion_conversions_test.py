@@ -17,6 +17,9 @@
 
 import numpy as np
 import pytest
+from qeqiskit.conversions import qiskitpauli_to_qubitop, qubitop_to_qiskitpauli
+from qiskit.opflow import PauliOp, SummedOp
+from qiskit.quantum_info import Pauli
 from zquantum.core.openfermion.ops import (
     FermionOperator,
     InteractionOperator,
@@ -25,9 +28,6 @@ from zquantum.core.openfermion.ops import (
 )
 from zquantum.core.openfermion.transforms import jordan_wigner
 from zquantum.core.openfermion.utils import hermitian_conjugated
-from qeqiskit.conversions import qiskitpauli_to_qubitop, qubitop_to_qiskitpauli
-from qiskit.opflow import PauliOp, SummedOp
-from qiskit.quantum_info import Pauli
 
 
 def test_translation_type_enforcement():
