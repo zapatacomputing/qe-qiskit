@@ -150,7 +150,7 @@ class QiskitSimulator(QuantumSimulator):
         """
         ibmq_circuit = export_to_qiskit(circuit)
 
-        if not np.array_equal(initial_state, [1] + [0] * (2 ** circuit.n_qubits - 1)):
+        if not np.array_equal(initial_state, [1] + [0] * (2**circuit.n_qubits - 1)):
             state_prep_circuit = QuantumCircuit(circuit.n_qubits)
             state_prep_circuit.initialize(flip_amplitudes(initial_state))
             ibmq_circuit = state_prep_circuit.compose(ibmq_circuit)

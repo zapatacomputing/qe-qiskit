@@ -39,6 +39,7 @@ setuptools.setup(
         "symengine~=0.7",
         "numpy~=1.0",
         "z-quantum-core",
+        "openfermion~=1.0",
     ],
     extras_require=extras,
     include_package_data=True,
