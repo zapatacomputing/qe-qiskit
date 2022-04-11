@@ -1,5 +1,6 @@
 import math
 import os
+from copy import deepcopy
 
 import pytest
 import qiskit
@@ -99,7 +100,7 @@ class TestQiskitBackend(QuantumBackendTests):
             for batch in batches
         ]
 
-        measurements_set = backend.aggregregate_measurements(
+        measurements_set = backend.aggregate_measurements(
             jobs,
             batches,
             multiplicities,
@@ -263,6 +264,33 @@ class TestQiskitBackend(QuantumBackendTests):
         # Then
         assert backend_with_readout_correction.readout_correction
         assert backend_with_readout_correction.readout_correction_filter is not None
+
+    @pytest.mark.parametrize(
+        "counts, active_qubits",
+        [
+            ({"100000000000000000001": 10}, [0, 20]),
+            ({"100000000000000000100": 10}, [0, 18, 20]),
+            ({"001000000000000000001": 10}, [2, 20]),
+        ],
+    )
+    def test_subset_readout_correction(
+        self, backend_with_readout_correction, counts, active_qubits
+    ):
+        # Given
+
+        # When
+        mitigated_counts = backend_with_readout_correction._apply_readout_correction(
+            counts, active_qubits
+        )
+        # chop rounding errors from mitigation
+        for key in deepcopy(list(mitigated_counts.keys())):
+            if mitigated_counts[key] < 10e-5:
+                del mitigated_counts[key]
+
+        # Then
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filter is not None
+        assert counts == pytest.approx(mitigated_counts, 10e-5)
 
     def test_device_that_does_not_exist(self):
         # Given/When/Then
