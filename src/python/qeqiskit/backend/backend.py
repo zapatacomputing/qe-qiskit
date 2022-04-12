@@ -9,6 +9,7 @@ from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError, IBMQBackendJobLimitError
 from qiskit.providers.ibmq.job import IBMQJob
 from qiskit.result import Counts
+from qiskit.converters import circuit_to_dag
 from zquantum.core.circuits import Circuit
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.measurement import Measurements
@@ -89,6 +90,45 @@ class QiskitBackend(QuantumBackend):
             raise ValueError("n_samples should be greater than 0.")
         return self.run_circuitset_and_measure([circuit], [n_samples])[0]
 
+    def get_final_virtual_physical_qubit_mapping(
+        self,
+        transpiled_circuitset: List[QuantumCircuit]
+    ) -> List[List[int]]:
+        """
+
+        Args:
+            transpiled_circuitset: The qiskit circuits that have been run on the backend 
+                                   and transpiled to fit to the connectivity of backend
+            n_qubits: number of qubits in the circuits
+        """
+
+        final_layout_list = []
+        for circuit in transpiled_circuitset:
+            n_qubits = circuit.num_qubits
+            dag = circuit_to_dag(circuit)
+            dag_layers = list(dag.layers())
+            final_map = [None]*n_qubits
+            measure_op_found = 0
+            dag_layer_idx = -1
+            while not measure_op_found == n_qubits:
+                single_layer_dag = dag_layers[dag_layer_idx]['graph']
+                # dag_drawer(single_layer_dag)
+                for node in single_layer_dag.nodes():   
+                    if node.name == 'measure':
+                        measure_op_found += 1
+                        child_nodes = single_layer_dag.successors(node)
+                        
+                        for cnode in child_nodes:
+                            if isinstance(cnode.wire.register, QuantumRegister):
+                                value = cnode.wire.index
+                            if isinstance(cnode.wire.register, ClassicalRegister):
+                                idx = cnode.wire.index
+                        final_map[idx] = value # idx --> virtual qubit, value --> physical
+                dag_layer_idx -= 1
+            final_layout_list.append(final_map)
+        return final_layout_list # list of physical qubits where virtual qubits are ordered
+
+        
     def transform_circuitset_to_ibmq_experiments(
         self,
         circuitset: Sequence[Circuit],
@@ -213,7 +253,7 @@ class QiskitBackend(QuantumBackend):
         for job, batch in zip(jobs, batches):
             for experiment in batch:
                 ibmq_circuit_counts_set.append(job.result().get_counts(experiment))
-
+        
         measurements_set = []
         ibmq_circuit_index = 0
         for multiplicity in multiplicities:
@@ -235,8 +275,13 @@ class QiskitBackend(QuantumBackend):
             reversed_counts = {}
             for bitstring in combined_counts.keys():
                 reversed_counts[bitstring[::-1]] = int(combined_counts[bitstring])
+            
+            final_layout_mappings = []
+            for job in jobs:
+                final_layout_mappings.append(self.get_final_virtual_physical_qubit_mapping(job.circuits()))
 
             measurements = Measurements.from_counts(reversed_counts)
+            measurements.final_qubit_mapings = final_layout_mappings
             measurements_set.append(measurements)
 
         return measurements_set
@@ -305,6 +350,7 @@ class QiskitBackend(QuantumBackend):
                     optimization_level=self.optimization_level,
                     backend_properties=self.device.properties(),
                 )
+
                 return job
             except IBMQBackendJobLimitError:
                 if self.retry_timeout_seconds is not None:
