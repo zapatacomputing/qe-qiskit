@@ -264,7 +264,7 @@ class TestQiskitBackend(QuantumBackendTests):
         # Then
         assert backend_with_readout_correction.readout_correction
         assert (
-            backend_with_readout_correction.readout_correction_filters.get(str([0, 1]))
+            backend_with_readout_correction.readout_correction_filters.get(str([0, 5]))
             is not None
         )
         assert len(measurements_set) == num_circuits
