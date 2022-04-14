@@ -341,8 +341,6 @@ class QiskitBackend(QuantumBackend):
         """
 
         start_time = time.time()
-        for b in batch:
-            print(b.draw())
         while True:
             try:
                 job = execute(
