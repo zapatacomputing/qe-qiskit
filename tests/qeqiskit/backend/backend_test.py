@@ -162,7 +162,6 @@ class TestQiskitBackend(QuantumBackendTests):
         # Each job has a unique ID
         assert len(set([job.job_id() for job in jobs])) == num_jobs
 
-    @pytest.mark.skip(reason="Failing on dev, maybe problem already fixed on server?")
     def test_execute_with_retries_timeout(self, backend):
         # This test has a race condition where the IBMQ server might finish
         # executing the first job before the last one is submitted, causing the
@@ -172,7 +171,8 @@ class TestQiskitBackend(QuantumBackendTests):
         circuit = export_to_qiskit(self.x_cnot_circuit())
         n_samples = 10
         backend.retry_timeout_seconds = 0
-        num_jobs = backend.device.job_limit().maximum_jobs + 1
+        # need large number here as + 1 was not enough
+        num_jobs = backend.device.job_limit().maximum_jobs + int(10e20)
 
         # Then
         with pytest.raises(RuntimeError):
@@ -279,6 +279,7 @@ class TestQiskitBackend(QuantumBackendTests):
             ({"100000000000000000001": 10}, [0, 20]),
             ({"100000000000000000100": 10}, [0, 18, 20]),
             ({"001000000000000000001": 10}, [2, 20]),
+            ({"11": 10}, None),
         ],
     )
     def test_subset_readout_correction(
@@ -297,6 +298,19 @@ class TestQiskitBackend(QuantumBackendTests):
             str(active_qubits)
         )
         assert counts == pytest.approx(mitigated_counts, 10e-5)
+
+    def test_must_define_n_samples_for_readout_calibration_for_readout_correction(
+        self, backend_with_readout_correction
+    ):
+        # Given
+        counts, active_qubits = ({"11": 10}, None)
+        backend_with_readout_correction.n_samples_for_readout_calibration = None
+
+        # When/Then
+        with pytest.raises(TypeError):
+            backend_with_readout_correction._apply_readout_correction(
+                counts, active_qubits
+            )
 
     def test_subset_readout_correction_for_multiple_subsets(
         self, backend_with_readout_correction
