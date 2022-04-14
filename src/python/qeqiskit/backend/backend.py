@@ -114,7 +114,10 @@ class QiskitBackend(QuantumBackend):
             while not measure_op_found == n_qubits:
                 print('dag index: ', dag_layer_idx)
                 single_layer_dag = dag_layers[dag_layer_idx]['graph']
-                for node in single_layer_dag.nodes():   
+                for node in single_layer_dag.nodes():  
+                    print('measure: ', measure_op_found)
+                    print('node: ', node)
+
                     if node.name == 'measure':
                         measure_op_found += 1
                         print(f"meausre op found {measure_op_found}")
