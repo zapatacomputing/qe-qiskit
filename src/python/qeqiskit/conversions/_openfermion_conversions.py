@@ -18,9 +18,9 @@
 """
 Translates OpenFermion Objects to qiskit SummedOp objects
 """
-from openfermion import QubitOperator, count_qubits
 from qiskit.opflow import PauliOp, SummedOp
 from qiskit.quantum_info import Pauli
+from zquantum.core.openfermion import QubitOperator, count_qubits
 
 
 def qubitop_to_qiskitpauli(qubit_operator: QubitOperator) -> SummedOp:

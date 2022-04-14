@@ -2,7 +2,6 @@ import os
 
 import pytest
 import qiskit.providers.aer.noise as AerNoise
-from openfermion.ops import QubitOperator
 from qeqiskit.noise import get_qiskit_noise_model
 from qeqiskit.simulator import QiskitSimulator
 from zquantum.core.circuits import CNOT, Circuit, X
@@ -13,6 +12,7 @@ from zquantum.core.interfaces.backend_test import (
 )
 from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.measurement import ExpectationValues
+from zquantum.core.openfermion.ops import QubitOperator
 
 
 @pytest.fixture(
