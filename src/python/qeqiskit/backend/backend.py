@@ -105,7 +105,7 @@ class QiskitBackend(QuantumBackend):
         final_layout_list = []
         for circuit in transpiled_circuitset:
             print(circuit.draw())
-            n_qubits = circuit.num_qubits
+            n_qubits = 4 #circuit.num_qubits
             dag = circuit_to_dag(circuit)
             dag_layers = list(dag.layers())
             final_map = [None]*n_qubits
@@ -382,6 +382,11 @@ class QiskitBackend(QuantumBackend):
 
             qr = QuantumRegister(num_qubits)
             meas_cals, state_labels = complete_meas_cal(qubit_list=qubit_list, qr=qr)
+
+            for cal_circ in meas_cals:
+                if cal_circ.num_qubits == 9:
+                    print(cal_circ)
+                    break
 
             # Execute the calibration circuits
             job = self.execute_with_retries(
