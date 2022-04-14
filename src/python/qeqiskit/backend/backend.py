@@ -162,7 +162,7 @@ class QiskitBackend(QuantumBackend):
             ibmq_circuit = export_to_qiskit(circuit)
             full_qubit_indices = list(range(circuit.n_qubits))
             ibmq_circuit.barrier(full_qubit_indices)
-            ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
+            # ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
             ibmq_circuit.measure_all()
             print('uncompiled: ', print(ibmq_circuit.draw()))
             # ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
