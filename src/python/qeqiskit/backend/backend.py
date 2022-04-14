@@ -104,6 +104,7 @@ class QiskitBackend(QuantumBackend):
 
         final_layout_list = []
         for circuit in transpiled_circuitset:
+            print(circuit.draw())
             n_qubits = circuit.num_qubits
             dag = circuit_to_dag(circuit)
             dag_layers = list(dag.layers())
@@ -111,8 +112,8 @@ class QiskitBackend(QuantumBackend):
             measure_op_found = 0
             dag_layer_idx = -1
             while not measure_op_found == n_qubits:
+                print('dag index: ', dag_layer_idx)
                 single_layer_dag = dag_layers[dag_layer_idx]['graph']
-                # dag_drawer(single_layer_dag)
                 for node in single_layer_dag.nodes():   
                     if node.name == 'measure':
                         measure_op_found += 1
