@@ -117,6 +117,7 @@ class QiskitBackend(QuantumBackend):
                 for node in single_layer_dag.nodes():   
                     if node.name == 'measure':
                         measure_op_found += 1
+                        print(f"meausre op found {measure_op_found}")
                         child_nodes = single_layer_dag.successors(node)
                         
                         for cnode in child_nodes:
