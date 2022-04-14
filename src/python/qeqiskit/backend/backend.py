@@ -105,13 +105,13 @@ class QiskitBackend(QuantumBackend):
         final_layout_list = []
         for circuit in transpiled_circuitset:
             print(circuit.draw())
-            n_qubits = 4 #circuit.num_qubits
+            n_clbits = circuit.num_clbits
             dag = circuit_to_dag(circuit)
             dag_layers = list(dag.layers())
             final_map = [None]*n_qubits
             measure_op_found = 0
             dag_layer_idx = -1
-            while not measure_op_found == n_qubits:
+            while measure_op_found != n_clbits:
                 print('dag index: ', dag_layer_idx)
                 single_layer_dag = dag_layers[dag_layer_idx]['graph']
                 for node in single_layer_dag.nodes():  
@@ -162,7 +162,7 @@ class QiskitBackend(QuantumBackend):
             ibmq_circuit = export_to_qiskit(circuit)
             full_qubit_indices = list(range(circuit.n_qubits))
             ibmq_circuit.barrier(full_qubit_indices)
-            # ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
+            ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
             ibmq_circuit.measure_all()
             print('uncompiled: ', print(ibmq_circuit.draw()))
             # ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
@@ -375,6 +375,7 @@ class QiskitBackend(QuantumBackend):
 
             for key in counts.keys():
                 num_qubits = len(key)
+                print(f"Length of bit-string {num_qubits}")
                 break
 
             if qubit_list is None or qubit_list == {}:
@@ -384,9 +385,10 @@ class QiskitBackend(QuantumBackend):
             meas_cals, state_labels = complete_meas_cal(qubit_list=qubit_list, qr=qr)
 
             for cal_circ in meas_cals:
-                if cal_circ.num_qubits == 9:
-                    print(cal_circ)
-                    break
+                print(f"Meas cal circ num_qubits {cal_circ.num_qubits} num_clbits {cal_circ.num_clbits}")
+                # if cal_circ.num_qubits == 9:
+                #     print(cal_circ)
+                #     break
 
             # Execute the calibration circuits
             job = self.execute_with_retries(
