@@ -105,31 +105,26 @@ class QiskitBackend(QuantumBackend):
         final_layout_list = []
         for circuit in transpiled_circuitset:
             print(circuit.draw())
-            n_qubits = circuit.num_qubits
-            dag = circuit_to_dag(circuit)
-            dag_layers = list(dag.layers())
-            final_map = [None]*n_qubits
+            cregs_list = circuit.cregs
+            num_cregs = len(cregs_list)
+            if num_cregs > 1:
+                raise ValueError(f"QuantumCircuit has {num_cregs} ClassicalRegister."
+                                "Currently, QuantumCircuit with only 1 ClassicalRegister is supported")
+            creg_size = cregs_list[0].size # potential number of measured qubits
+            final_map = [None] * creg_size
             measure_op_found = 0
-            dag_layer_idx = -1
-            while not measure_op_found == n_qubits:
-                print('dag index: ', dag_layer_idx)
-                single_layer_dag = dag_layers[dag_layer_idx]['graph']
-                for node in single_layer_dag.nodes():  
-                    print('measure: ', measure_op_found)
-                    print('node: ', node)
-
-                    if node.name == 'measure':
-                        measure_op_found += 1
-                        print(f"meausre op found {measure_op_found}")
-                        child_nodes = single_layer_dag.successors(node)
-                        
-                        for cnode in child_nodes:
-                            if isinstance(cnode.wire.register, QuantumRegister):
-                                value = cnode.wire.index
-                            if isinstance(cnode.wire.register, ClassicalRegister):
-                                idx = cnode.wire.index
-                        final_map[idx] = value # idx --> virtual qubit, value --> physical
-                dag_layer_idx -= 1
+            instruction_idx = 0
+            qreg_idx = 1
+            creg_idx = 2
+            for data in circuit.data[::-1]:
+                if data[instruction_idx].name == "measure":
+                    measure_op_found += 1
+                    qubit = data[qreg_idx][0].index # can be physical qubit or virtual qubit
+                    clbit = data[creg_idx][0].index
+                    final_map[clbit] = qubit
+                    if measure_op_found == creg_size:
+                        break
+            assert measure_op_found == creg_size, f"measured op found {measure_op_found} is less than ClassicalRegister size {creg_size}"
             final_layout_list.append(final_map)
         return final_layout_list # list of physical qubits where virtual qubits are ordered
 
@@ -163,9 +158,9 @@ class QiskitBackend(QuantumBackend):
             full_qubit_indices = list(range(circuit.n_qubits))
             ibmq_circuit.barrier(full_qubit_indices)
             ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
-            ibmq_circuit.measure_all()
+            # ibmq_circuit.measure_all()
             print('uncompiled: ', print(ibmq_circuit.draw()))
-            # ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
+            ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
 
             multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
 
