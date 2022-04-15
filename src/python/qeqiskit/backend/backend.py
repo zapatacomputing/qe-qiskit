@@ -104,7 +104,6 @@ class QiskitBackend(QuantumBackend):
 
         final_layout_list = []
         for circuit in transpiled_circuitset:
-            print(circuit.draw())
             cregs_list = circuit.cregs
             num_cregs = len(cregs_list)
             if num_cregs > 1:
