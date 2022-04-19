@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2020-2022 Zapata Computing Inc.
+################################################################################
 import math
 import time
 from typing import List, Optional, Sequence, Tuple

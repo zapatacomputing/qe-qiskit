@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2020-2021 Zapata Computing Inc.
+################################################################################
 from .basic import (
     create_amplitude_damping_noise,
     create_phase_and_amplitude_damping_error,
