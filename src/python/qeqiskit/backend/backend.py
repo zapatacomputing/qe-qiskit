@@ -33,6 +33,7 @@ class QiskitBackend(QuantumBackend):
         retry_delay_seconds: Optional[int] = 60,
         retry_timeout_seconds: Optional[int] = 86400,
         n_samples_for_readout_calibration: Optional[int] = None,
+        noise_inversion_method: str = "least_squares",
         **kwargs,
     ):
         """Get a qiskit QPU that adheres to the
@@ -56,6 +57,9 @@ class QiskitBackend(QuantumBackend):
             retry_delay_seconds: Number of seconds to wait to resubmit a job when
                 backend job limit is reached.
             retry_timeout_seconds: Number of seconds to wait
+            noise_inversion_method (str): Method for inverting noise using readout
+                correction. Options are "least_squares" and "pseudo_inverse".
+                Defaults to "least_squares."
         """
         super().__init__()
         self.device_name = device_name
@@ -83,6 +87,7 @@ class QiskitBackend(QuantumBackend):
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
         self.n_samples_for_readout_calibration = n_samples_for_readout_calibration
+        self.noise_inversion_method = noise_inversion_method
 
     def run_circuit_and_measure(self, circuit: Circuit, n_samples: int) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings.
@@ -336,7 +341,9 @@ class QiskitBackend(QuantumBackend):
         return measurements_set
 
     def _apply_readout_correction(
-        self, counts: Counts, active_qubits: Optional[List[int]] = None
+        self,
+        counts: Counts,
+        active_qubits: Optional[List[int]] = None,
     ):
         """Returns the counts from an experiment with readout correction applied to a
         set of qubits labeled active_qubits. Output counts will only show outputs for
@@ -348,7 +355,7 @@ class QiskitBackend(QuantumBackend):
             counts (Counts): Dictionary containing the number of times a bitstring
                 was received in an experiment.
             active_qubits (Optional[List[int]], optional): Qubits for perform readout
-                correction on. Defaults to None.
+                correction on. Defaults to readout correction on all qubits.
 
         Raises:
             TypeError: If n_samples_for_readout_correction was not defined when the
@@ -395,7 +402,7 @@ class QiskitBackend(QuantumBackend):
             self.readout_correction_filters[str(active_qubits)] = meas_fitter.filter
 
         this_filter = self.readout_correction_filters[str(active_qubits)]
-        mitigated_counts = this_filter.apply(counts)
+        mitigated_counts = this_filter.apply(counts, method=self.noise_inversion_method)
         # round to make up for precision loss from pseudoinverses used to invert noise
         rounded_mitigated_counts = {
             k: round(v, 8) for k, v in mitigated_counts.items() if round(v, 8) != 0

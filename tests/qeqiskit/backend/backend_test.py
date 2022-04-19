@@ -33,6 +33,14 @@ def backend(request):
             "n_samples_for_readout_calibration": 1,
             "retry_delay_seconds": 1,
         },
+        {
+            "device_name": "ibmq_qasm_simulator",
+            "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
+            "readout_correction": True,
+            "n_samples_for_readout_calibration": 1,
+            "retry_delay_seconds": 1,
+            "noise_inversion_method": "pseudo_inverse",
+        },
     ]
 )
 def backend_with_readout_correction(request):
