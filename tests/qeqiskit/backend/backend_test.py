@@ -1,5 +1,6 @@
 import math
 import os
+from copy import deepcopy
 
 import pytest
 import qiskit
@@ -33,7 +34,15 @@ def backend(request):
             "n_samples_for_readout_calibration": 1,
             "retry_delay_seconds": 1,
         },
-    ]
+        {
+            "device_name": "ibmq_qasm_simulator",
+            "api_token": os.getenv("ZAPATA_IBMQ_API_TOKEN"),
+            "readout_correction": True,
+            "n_samples_for_readout_calibration": 1,
+            "retry_delay_seconds": 1,
+            "noise_inversion_method": "pseudo_inverse",
+        },
+    ],
 )
 def backend_with_readout_correction(request):
     return QiskitBackend(**request.param)
@@ -99,7 +108,7 @@ class TestQiskitBackend(QuantumBackendTests):
             for batch in batches
         ]
 
-        measurements_set = backend.aggregregate_measurements(
+        measurements_set = backend.aggregate_measurements(
             jobs,
             batches,
             multiplicities,
@@ -162,7 +171,6 @@ class TestQiskitBackend(QuantumBackendTests):
         # Each job has a unique ID
         assert len(set([job.job_id() for job in jobs])) == num_jobs
 
-    @pytest.mark.skip(reason="Failing on dev, maybe problem already fixed on server?")
     def test_execute_with_retries_timeout(self, backend):
         # This test has a race condition where the IBMQ server might finish
         # executing the first job before the last one is submitted, causing the
@@ -172,7 +180,8 @@ class TestQiskitBackend(QuantumBackendTests):
         circuit = export_to_qiskit(self.x_cnot_circuit())
         n_samples = 10
         backend.retry_timeout_seconds = 0
-        num_jobs = backend.device.job_limit().maximum_jobs + 1
+        # need large number here as + 1 was not enough
+        num_jobs = backend.device.job_limit().maximum_jobs + int(10e20)
 
         # Then
         with pytest.raises(RuntimeError):
@@ -246,23 +255,115 @@ class TestQiskitBackend(QuantumBackendTests):
 
         # Then
         assert backend_with_readout_correction.readout_correction
-        assert backend_with_readout_correction.readout_correction_filter is not None
+        assert backend_with_readout_correction.readout_correction_filters is not None
 
-    def test_readout_correction_works_run_circuitset_and_measure(
+    def test_readout_correction_for_distributed_circuit(
         self, backend_with_readout_correction
     ):
         # Given
-        circuit = self.x_cnot_circuit()
-        n_samples = 10
+        num_circuits = 10
+        circuit = self.x_circuit() + X(5)
+        n_samples = 100
 
         # When
-        backend_with_readout_correction.run_circuitset_and_measure(
-            [circuit] * 2, [n_samples] * 2
+        measurements_set = backend_with_readout_correction.run_circuitset_and_measure(
+            [circuit] * num_circuits, [n_samples] * num_circuits
         )
 
         # Then
         assert backend_with_readout_correction.readout_correction
-        assert backend_with_readout_correction.readout_correction_filter is not None
+        assert (
+            backend_with_readout_correction.readout_correction_filters.get(str([0, 5]))
+            is not None
+        )
+        assert len(measurements_set) == num_circuits
+        for measurements in measurements_set:
+            assert len(measurements.bitstrings) == n_samples
+            counts = measurements.get_counts()
+            assert max(counts, key=counts.get) == "11"
+
+    @pytest.mark.parametrize(
+        "counts, active_qubits",
+        [
+            ({"100000000000000000001": 10}, [0, 20]),
+            ({"100000000000000000100": 10}, [0, 18, 20]),
+            ({"001000000000000000001": 10}, [2, 20]),
+        ],
+    )
+    def test_subset_readout_correction(
+        self, counts, active_qubits, backend_with_readout_correction
+    ):
+        # Given
+        copied_counts = deepcopy(counts)
+
+        # When
+        mitigated_counts = backend_with_readout_correction._apply_readout_correction(
+            copied_counts, active_qubits
+        )
+
+        # Then
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filters.get(
+            str(active_qubits)
+        )
+        assert copied_counts == pytest.approx(mitigated_counts, 10e-5)
+
+    def test_subset_readout_correction_with_unspecified_active_qubits(
+        self, backend_with_readout_correction
+    ):
+        # Given
+        counts = {"11": 10}
+
+        # When
+        mitigated_counts = backend_with_readout_correction._apply_readout_correction(
+            counts
+        )
+
+        # Then
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filters.get(
+            str([0, 1])
+        )
+        assert counts == pytest.approx(mitigated_counts, 10e-5)
+
+    def test_must_define_n_samples_for_readout_calibration_for_readout_correction(
+        self, backend_with_readout_correction
+    ):
+        # Given
+        counts, active_qubits = ({"11": 10}, None)
+        backend_with_readout_correction.n_samples_for_readout_calibration = None
+
+        # When/Then
+        with pytest.raises(TypeError):
+            backend_with_readout_correction._apply_readout_correction(
+                counts, active_qubits
+            )
+
+    def test_subset_readout_correction_for_multiple_subsets(
+        self, backend_with_readout_correction
+    ):
+        # Given
+        counts_1, active_qubits_1 = ({"100000000000000000001": 10}, [0, 20])
+        counts_2, active_qubits_2 = ({"001000000000000000001": 10}, [2, 20])
+
+        # When
+        mitigated_counts_1 = backend_with_readout_correction._apply_readout_correction(
+            counts_1, active_qubits_1
+        )
+        mitigated_counts_2 = backend_with_readout_correction._apply_readout_correction(
+            counts_2, active_qubits_2
+        )
+
+        # Then
+        assert backend_with_readout_correction.readout_correction
+        assert backend_with_readout_correction.readout_correction_filters.get(
+            str(active_qubits_1)
+        )
+        assert backend_with_readout_correction.readout_correction_filters.get(
+            str(active_qubits_2)
+        )
+        assert counts_1 == pytest.approx(mitigated_counts_1, 10e-5)
+        assert counts_2 == pytest.approx(mitigated_counts_2, 10e-5)
 
     def test_device_that_does_not_exist(self):
         # Given/When/Then
