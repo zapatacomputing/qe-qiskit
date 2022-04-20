@@ -1,5 +1,6 @@
 import math
 import os
+from copy import deepcopy
 
 import pytest
 import qiskit
@@ -41,7 +42,7 @@ def backend(request):
             "retry_delay_seconds": 1,
             "noise_inversion_method": "pseudo_inverse",
         },
-    ]
+    ],
 )
 def backend_with_readout_correction(request):
     return QiskitBackend(**request.param)
@@ -290,13 +291,14 @@ class TestQiskitBackend(QuantumBackendTests):
         ],
     )
     def test_subset_readout_correction(
-        self, backend_with_readout_correction, counts, active_qubits
+        self, counts, active_qubits, backend_with_readout_correction
     ):
         # Given
+        copied_counts = deepcopy(counts)
 
         # When
         mitigated_counts = backend_with_readout_correction._apply_readout_correction(
-            counts, active_qubits
+            copied_counts, active_qubits
         )
 
         # Then
@@ -304,7 +306,7 @@ class TestQiskitBackend(QuantumBackendTests):
         assert backend_with_readout_correction.readout_correction_filters.get(
             str(active_qubits)
         )
-        assert counts == pytest.approx(mitigated_counts, 10e-5)
+        assert copied_counts == pytest.approx(mitigated_counts, 10e-5)
 
     def test_subset_readout_correction_with_unspecified_active_qubits(
         self, backend_with_readout_correction
