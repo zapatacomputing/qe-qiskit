@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2020-2021 Zapata Computing Inc.
+################################################################################
 from qeqiskit.noise import (
     create_amplitude_damping_noise as _create_amplitude_damping_noise,
 )
