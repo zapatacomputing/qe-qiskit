@@ -8,3 +8,6 @@ github_actions:
 		${VENV}/bin/python3 -m pip install --upgrade pip && \
 		${VENV}/bin/python3 -m pip install ./z-quantum-core && \
 		${VENV}/bin/python3 -m pip install -e '.[develop]'
+
+build-system-deps:
+	$(PYTHON) -m pip install setuptools wheel "setuptools_scm>=6.0"
