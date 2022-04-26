@@ -1,10 +1,19 @@
+################################################################################
+# © Copyright 2020-2022 Zapata Computing Inc.
+################################################################################
 import math
 import time
-from typing import List, Optional, Sequence, Tuple
+from copy import deepcopy
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from qeqiskit.conversions import export_to_qiskit
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
-from qiskit.ignis.mitigation.measurement import CompleteMeasFitter, complete_meas_cal
+from qiskit.circuit.gate import Gate as QiskitGate
+from qiskit.ignis.mitigation.measurement import (
+    CompleteMeasFitter,
+    MeasurementFilter,
+    complete_meas_cal,
+)
 from qiskit.providers.ibmq import IBMQ
 from qiskit.providers.ibmq.exceptions import IBMQAccountError, IBMQBackendJobLimitError
 from qiskit.providers.ibmq.job import IBMQJob
@@ -28,6 +37,7 @@ class QiskitBackend(QuantumBackend):
         retry_delay_seconds: Optional[int] = 60,
         retry_timeout_seconds: Optional[int] = 86400,
         n_samples_for_readout_calibration: Optional[int] = None,
+        noise_inversion_method: str = "least_squares",
         **kwargs,
     ):
         """Get a qiskit QPU that adheres to the
@@ -51,6 +61,9 @@ class QiskitBackend(QuantumBackend):
             retry_delay_seconds: Number of seconds to wait to resubmit a job when
                 backend job limit is reached.
             retry_timeout_seconds: Number of seconds to wait
+            noise_inversion_method (str): Method for inverting noise using readout
+                correction. Options are "least_squares" and "pseudo_inverse".
+                Defaults to "least_squares."
         """
         super().__init__()
         self.device_name = device_name
@@ -70,7 +83,7 @@ class QiskitBackend(QuantumBackend):
         self.batch_size: int = self.device.configuration().max_experiments
         self.supports_batching = True
         self.readout_correction = readout_correction
-        self.readout_correction_filter = None
+        self.readout_correction_filters: Dict[str, MeasurementFilter] = {}
         self.optimization_level = optimization_level
         self.basis_gates = kwargs.get(
             "basis_gates", self.device.configuration().basis_gates
@@ -78,6 +91,7 @@ class QiskitBackend(QuantumBackend):
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
         self.n_samples_for_readout_calibration = n_samples_for_readout_calibration
+        self.noise_inversion_method = noise_inversion_method
 
     def run_circuit_and_measure(self, circuit: Circuit, n_samples: int) -> Measurements:
         """Run a circuit and measure a certain number of bitstrings.
@@ -128,6 +142,40 @@ class QiskitBackend(QuantumBackend):
         return final_layout_list # list of physical qubits where virtual qubits are ordered
 
         
+    def run_circuitset_and_measure(
+        self,
+        circuits: Sequence[Circuit],
+        n_samples: Sequence[int],
+    ) -> List[Measurements]:
+        """Run a set of circuits and measure a certain number of bitstrings.
+
+        Args:
+            circuitset: the circuits to run
+            n_samples: The number of shots to perform on each circuit.
+
+        Returns:
+            A list of Measurements objects containing the observed bitstrings.
+        """
+
+        (
+            experiments,
+            n_samples_for_experiments,
+            multiplicities,
+        ) = self.transform_circuitset_to_ibmq_experiments(circuits, n_samples)
+        batches, n_samples_for_batches = self.batch_experiments(
+            experiments, n_samples_for_experiments
+        )
+
+        jobs = [
+            self.execute_with_retries(batch, n_samples)
+            for n_samples, batch in zip(n_samples_for_batches, batches)
+        ]
+
+        self.number_of_circuits_run += len(circuits)
+        self.number_of_jobs_run += len(batches)
+
+        return self.aggregate_measurements(jobs, batches, multiplicities)
+
     def transform_circuitset_to_ibmq_experiments(
         self,
         circuitset: Sequence[Circuit],
@@ -145,6 +193,7 @@ class QiskitBackend(QuantumBackend):
             Tuple containing:
             - The expanded list of circuits, converted to qiskit and each
               assigned a unique name.
+            - List of number of samples for each element in expanded list of circuits
             - An array indicating how many duplicates there are for each of the
               original circuits.
         """
@@ -229,7 +278,49 @@ class QiskitBackend(QuantumBackend):
 
         return batches, n_samples_for_batches
 
-    def aggregregate_measurements(
+    def execute_with_retries(
+        self, batch: List[QuantumCircuit], n_samples: int
+    ) -> IBMQJob:
+        """Execute a job, resubmitting if the the backend job limit has been
+        reached.
+
+        The number of seconds between retries is specified by
+        self.retry_delay_seconds. If self.retry_timeout_seconds is defined, then
+        an exception will be raised if the submission does not succeed in the
+        specified number of seconds.
+
+        Args:
+            batch: The batch of qiskit circuits to be executed.
+            n_samples: The number of shots to perform on each circuit.
+
+        Returns:
+            The qiskit representation of the submitted job.
+        """
+
+        start_time = time.time()
+        while True:
+            try:
+                job = execute(
+                    batch,
+                    self.device,
+                    shots=n_samples,
+                    basis_gates=self.basis_gates,
+                    optimization_level=self.optimization_level,
+                    backend_properties=self.device.properties(),
+                )
+                return job
+            except IBMQBackendJobLimitError:
+                if self.retry_timeout_seconds is not None:
+                    elapsed_time_seconds = time.time() - start_time
+                    if elapsed_time_seconds > self.retry_timeout_seconds:
+                        raise RuntimeError(
+                            f"Failed to submit job in {elapsed_time_seconds}s due to "
+                            "backend job limit."
+                        )
+                print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
+                time.sleep(self.retry_delay_seconds)  # type: ignore
+
+    def aggregate_measurements(
         self,
         jobs: List[IBMQJob],
         batches: List[List[QuantumCircuit]],
@@ -250,26 +341,36 @@ class QiskitBackend(QuantumBackend):
             corresponds to one of the circuits of the original (unexpanded)
             circuit set.
         """
-        ibmq_circuit_counts_set = []
+        circuit_set = []
+        circuit_counts_set = []
         for job, batch in zip(jobs, batches):
             for experiment in batch:
                 ibmq_circuit_counts_set.append(job.result().get_counts(experiment))
         
         measurements_set = []
-        ibmq_circuit_index = 0
+        circuit_index = 0
         for multiplicity in multiplicities:
             combined_counts = Counts({})
-            for i in range(multiplicity):
-                for bitstring, counts in ibmq_circuit_counts_set[
-                    ibmq_circuit_index
-                ].items():
+            for _ in range(multiplicity):
+                for bitstring, counts in circuit_counts_set[circuit_index].items():
                     combined_counts[bitstring] = (
                         combined_counts.get(bitstring, 0) + counts
                     )
-                ibmq_circuit_index += 1
+                circuit_index += 1
 
             if self.readout_correction:
-                combined_counts = self._apply_readout_correction(combined_counts)
+                current_circuit = circuit_set[circuit_index - 1]
+                active_qubits = list(
+                    {
+                        qubit.index
+                        for inst in current_circuit.data
+                        if isinstance(inst[0], QiskitGate)
+                        for qubit in inst[1]
+                    }
+                )
+                combined_counts = self._apply_readout_correction(
+                    combined_counts, active_qubits
+                )
 
             # qiskit counts object maps bitstrings in reversed order to ints, so we must
             # flip the bitstrings
@@ -287,57 +388,30 @@ class QiskitBackend(QuantumBackend):
 
         return measurements_set
 
-    def run_circuitset_and_measure(
+    def _apply_readout_correction(
         self,
-        circuits: Sequence[Circuit],
-        n_samples: Sequence[int],
-    ) -> List[Measurements]:
-        """Run a set of circuits and measure a certain number of bitstrings.
+        counts: Counts,
+        active_qubits: Optional[List[int]] = None,
+    ):
+        """Returns the counts from an experiment with readout correction applied to a
+        set of qubits labeled active_qubits. Output counts will only show outputs for
+        corrected qubits. If no filter exists for the current active, qubits the
+        function will make one. Otherwise, function will re-use filter it created
+        for these active qubits previously. Has 8 digits of precision.
 
         Args:
-            circuitset: the circuits to run
-            n_samples: The number of shots to perform on each circuit.
+            counts (Counts): Dictionary containing the number of times a bitstring
+                was received in an experiment.
+            active_qubits (Optional[List[int]], optional): Qubits for perform readout
+                correction on. Defaults to readout correction on all qubits.
+
+        Raises:
+            TypeError: If n_samples_for_readout_correction was not defined when the
+                QiskitBackend Object was declared.
 
         Returns:
-            A list of Measurements objects containing the observed bitstrings.
-        """
-
-        (
-            experiments,
-            n_samples_for_experiments,
-            multiplicities,
-        ) = self.transform_circuitset_to_ibmq_experiments(circuits, n_samples)
-        batches, n_samples_for_batches = self.batch_experiments(
-            experiments, n_samples_for_experiments
-        )
-
-        jobs = [
-            self.execute_with_retries(batch, n_samples)
-            for n_samples, batch in zip(n_samples_for_batches, batches)
-        ]
-
-        self.number_of_circuits_run += len(circuits)
-        self.number_of_jobs_run += len(batches)
-
-        return self.aggregregate_measurements(jobs, batches, multiplicities)
-
-    def execute_with_retries(
-        self, batch: List[QuantumCircuit], n_samples: int
-    ) -> IBMQJob:
-        """Execute a job, resubmitting if the the backend job limit has been
-        reached.
-
-        The number of seconds between retries is specified by
-        self.retry_delay_seconds. If self.retry_timeout_seconds is defined, then
-        an exception will be raised if the submission does not succeed in the
-        specified number of seconds.
-
-        Args:
-            batch: The batch of qiskit ircuits to be executed.
-            n_samples: The number of shots to perform on each circuit.
-
-        Returns:
-            The qiskit representation of the submitted job.
+            mitigated_counts (Counts): counts for each output bitstring only showing
+                the qubits which were mitigated.
         """
 
         start_time = time.time()
@@ -363,19 +437,28 @@ class QiskitBackend(QuantumBackend):
                         )
                 print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
                 time.sleep(self.retry_delay_seconds)  # type: ignore
+        for key in counts.keys():
+            num_qubits = len(key)
+            break
 
-    def _apply_readout_correction(self, counts, qubit_list=None):
-        if self.readout_correction_filter is None:
+        if active_qubits is None:
+            active_qubits = list(range(num_qubits))
+        else:
+            active_qubits.sort()
+            for key in deepcopy(list(counts.keys())):
+                new_key = "".join(key[i] for i in active_qubits)
+                counts[new_key] = counts.get(new_key, 0) + counts.pop(key)
 
-            for key in counts.keys():
-                num_qubits = len(key)
-                break
+        if not self.readout_correction_filters.get(str(active_qubits)):
 
-            if qubit_list is None or qubit_list == {}:
-                qubit_list = [i for i in range(num_qubits)]
+            if self.n_samples_for_readout_calibration is None:
+                raise TypeError(
+                    "n_samples_for_readout_calibration must"
+                    "be set to use readout calibration"
+                )
 
             qr = QuantumRegister(num_qubits)
-            meas_cals, state_labels = complete_meas_cal(qubit_list=qubit_list, qr=qr)
+            meas_cals, state_labels = complete_meas_cal(qubit_list=active_qubits, qr=qr)
 
             # Execute the calibration circuits
             job = self.execute_with_retries(
@@ -385,8 +468,14 @@ class QiskitBackend(QuantumBackend):
 
             # Make a calibration matrix
             meas_fitter = CompleteMeasFitter(cal_results, state_labels)
-            # Create a measurement filter from the calibration matrix
-            self.readout_correction_filter = meas_fitter.filter
 
-        mitigated_counts = self.readout_correction_filter.apply(counts)
-        return mitigated_counts
+            # Create a measurement filter from the calibration matrix
+            self.readout_correction_filters[str(active_qubits)] = meas_fitter.filter
+
+        this_filter = self.readout_correction_filters[str(active_qubits)]
+        mitigated_counts = this_filter.apply(counts, method=self.noise_inversion_method)
+        # round to make up for precision loss from pseudoinverses used to invert noise
+        rounded_mitigated_counts = {
+            k: round(v, 8) for k, v in mitigated_counts.items() if round(v, 8) != 0
+        }
+        return rounded_mitigated_counts

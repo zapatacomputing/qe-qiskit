@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 import hashlib
 from typing import Dict, Iterable, List, NamedTuple, Sequence, Tuple, Union
 
