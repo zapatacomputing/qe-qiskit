@@ -87,6 +87,7 @@ class QiskitBackend(QuantumBackend):
         self.basis_gates = kwargs.get(
             "basis_gates", self.device.configuration().basis_gates
         )
+        self.initial_layout = kwargs.get("initial_layout", None)
         self.retry_delay_seconds = retry_delay_seconds
         self.retry_timeout_seconds = retry_timeout_seconds
         self.n_samples_for_readout_calibration = n_samples_for_readout_calibration
@@ -264,6 +265,7 @@ class QiskitBackend(QuantumBackend):
                     self.device,
                     shots=n_samples,
                     basis_gates=self.basis_gates,
+                    initial_layout=self.initial_layout,
                     optimization_level=self.optimization_level,
                     backend_properties=self.device.properties(),
                 )
