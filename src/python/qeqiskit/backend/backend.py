@@ -206,8 +206,6 @@ class QiskitBackend(QuantumBackend):
             full_qubit_indices = list(range(circuit.n_qubits))
             ibmq_circuit.barrier(full_qubit_indices)
             ibmq_circuit.add_register(ClassicalRegister(size=circuit.n_qubits))
-            # ibmq_circuit.measure_all()
-            print('uncompiled: ', print(ibmq_circuit.draw()))
             ibmq_circuit.measure(full_qubit_indices, full_qubit_indices)
 
             multiplicities.append(math.ceil(n_samples_for_circuit / self.max_shots))
@@ -341,11 +339,13 @@ class QiskitBackend(QuantumBackend):
             corresponds to one of the circuits of the original (unexpanded)
             circuit set.
         """
+        
         circuit_set = []
         circuit_counts_set = []
         for job, batch in zip(jobs, batches):
             for experiment in batch:
-                ibmq_circuit_counts_set.append(job.result().get_counts(experiment))
+                circuit_set.append(experiment)
+                circuit_counts_set.append(job.result().get_counts(experiment))
         
         measurements_set = []
         circuit_index = 0
@@ -413,30 +413,7 @@ class QiskitBackend(QuantumBackend):
             mitigated_counts (Counts): counts for each output bitstring only showing
                 the qubits which were mitigated.
         """
-
-        start_time = time.time()
-        while True:
-            try:
-                job = execute(
-                    batch,
-                    self.device,
-                    shots=n_samples,
-                    basis_gates=self.basis_gates,
-                    optimization_level=self.optimization_level,
-                    backend_properties=self.device.properties(),
-                )
-
-                return job
-            except IBMQBackendJobLimitError:
-                if self.retry_timeout_seconds is not None:
-                    elapsed_time_seconds = time.time() - start_time
-                    if elapsed_time_seconds > self.retry_timeout_seconds:
-                        raise RuntimeError(
-                            f"Failed to submit job in {elapsed_time_seconds}s due to "
-                            "backend job limit."
-                        )
-                print(f"Job limit reached. Retrying in {self.retry_delay_seconds}s.")
-                time.sleep(self.retry_delay_seconds)  # type: ignore
+        
         for key in counts.keys():
             num_qubits = len(key)
             break
