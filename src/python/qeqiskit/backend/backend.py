@@ -136,7 +136,8 @@ class QiskitBackend(QuantumBackend):
         self.number_of_circuits_run += len(circuits)
         self.number_of_jobs_run += len(batches)
 
-        return self.aggregate_measurements(jobs, batches, multiplicities)
+        #return self.aggregate_measurements(jobs, batches, multiplicities)
+        return(jobs)
 
     def transform_circuitset_to_ibmq_experiments(
         self,
